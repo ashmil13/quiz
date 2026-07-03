@@ -8,7 +8,9 @@ export const connectDB = async () => {
   }
 
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/quiz');
+    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/quiz', {
+      serverSelectionTimeoutMS: 5000 // fail quickly (5s) if MongoDB cannot be reached
+    });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return true;
   } catch (error) {
