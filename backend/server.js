@@ -122,10 +122,16 @@ const seedQuizData = async () => {
 };
 
 // Connect to MongoDB Database
-connectDB().then(() => {
-  seedSuperAdmin();
-  seedQuizData();
-});
+connectDB()
+  .then((connected) => {
+    if (connected) {
+      seedSuperAdmin();
+      seedQuizData();
+    }
+  })
+  .catch((err) => {
+    console.error('⚠️ Database connection failed. Seeding skipped.', err.message);
+  });
 
 // Middlewares
 const allowedOrigins = [
