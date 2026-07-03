@@ -2,15 +2,15 @@ import mongoose from 'mongoose';
 
 // Connect to MongoDB Database
 export const connectDB = async () => {
-  if (process.env.VERCEL && !process.env.MONGO_URI) {
-    console.error('❌ Critical Error: MONGO_URI environment variable is missing in Vercel settings.');
-    throw new Error('MONGO_URI is missing');
+  const dbUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+  if (process.env.VERCEL && !dbUri) {
+    console.error('❌ Critical Error: Neither MONGO_URI nor MONGODB_URI environment variable is set in Vercel settings.');
+    throw new Error('Database connection URI is missing');
   }
 
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/quiz', {
-      serverSelectionTimeoutMS: 5000 // fail quickly (5s) if MongoDB cannot be reached
-    });
+    const conn = await mongoose.connect(dbUri || 'mongodb://localhost:27017/quiz');
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return true;
   } catch (error) {
