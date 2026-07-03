@@ -176,14 +176,14 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`🚀 Server running in development mode on port ${PORT}`);
     console.log(`📡 Health Check URL: http://localhost:${PORT}/`);
     console.log(`📂 Static Uploads URL: http://localhost:${PORT}/uploads/`);
   });
-}
+// }
 
 export default app;
 
