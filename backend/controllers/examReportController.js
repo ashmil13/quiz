@@ -12,11 +12,20 @@ const __dirname = path.dirname(__filename);
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const videosDir = path.join(uploadsDir, 'videos');
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+  }
+} catch (err) {
+  console.warn("⚠️ Warning: Could not create uploads directory (Read-only filesystem):", err.message);
 }
-if (!fs.existsSync(videosDir)) {
-  fs.mkdirSync(videosDir);
+
+try {
+  if (!fs.existsSync(videosDir)) {
+    fs.mkdirSync(videosDir);
+  }
+} catch (err) {
+  console.warn("⚠️ Warning: Could not create videos directory (Read-only filesystem):", err.message);
 }
 
 // Upload Exam Video and Save Metadata Report
@@ -57,9 +66,14 @@ export const uploadExamReport = async (req, res) => {
         const filePath = path.join(videosDir, filename);
 
         // Write binary buffer to file
-        fs.writeFileSync(filePath, buffer);
-        videoUrl = `/uploads/videos/${filename}`;
-        console.log(`🎥 Exam video saved: ${filePath}`);
+        try {
+          fs.writeFileSync(filePath, buffer);
+          videoUrl = `/uploads/videos/${filename}`;
+          console.log(`🎥 Exam video saved: ${filePath}`);
+        } catch (writeErr) {
+          console.error(`⚠️ Failed to write video file to disk: ${writeErr.message}`);
+          // On Vercel, the file cannot be written, but it's okay because the base64 string is stored directly in MongoDB
+        }
       } else {
         console.warn("⚠️ Invalid video base64 format received, skipping video save.");
       }
@@ -155,8 +169,12 @@ export const deleteReport = async (req, res) => {
     // Delete video file from disk if it exists
     if (report.videoUrl) {
       const filePath = path.join(__dirname, '..', report.videoUrl);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (unlinkErr) {
+        console.error(`⚠️ Failed to delete video file from disk: ${unlinkErr.message}`);
       }
     }
 
