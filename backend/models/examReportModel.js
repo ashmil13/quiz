@@ -59,5 +59,5 @@ const ExamReportSchema = new mongoose.Schema({
   timestamps: true
 });
 
-export const ExamReport = mongoose.model('ExamReport', ExamReportSchema);
+export const ExamReport = mongoose.models.ExamReport || mongoose.model('ExamReport', ExamReportSchema);
 export default ExamReport;

@@ -18,5 +18,5 @@ const QuizConfigSchema = new mongoose.Schema({
   collection: 'quizconfig'
 });
 
-export const QuizConfig = mongoose.model('QuizConfig', QuizConfigSchema);
+export const QuizConfig = mongoose.models.QuizConfig || mongoose.model('QuizConfig', QuizConfigSchema);
 export default QuizConfig;
