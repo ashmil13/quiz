@@ -937,7 +937,7 @@
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 1000;
+  z-index: 9999;
   width: 140px;
   border-radius: 16px;
   overflow: hidden;
@@ -947,6 +947,8 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   animation: slide-up-fade 0.3s ease-out;
+  touch-action: none;
+  pointer-events: auto;
 }
 
 .floating-camera-card {

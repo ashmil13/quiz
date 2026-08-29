@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Award, Timer, RotateCcw, BookOpen, AlertCircle, Camera, Mic, Shield, ShieldAlert, Volume2, UserCheck, RefreshCw, Sparkles, Activity, FileText, CheckCircle2, Lock } from 'lucide-react';
+import { Play, Award, Timer, RotateCcw, BookOpen, AlertCircle, Camera, Mic, Shield, ShieldAlert, Volume2, UserCheck, RefreshCw, Sparkles, Activity, FileText, CheckCircle2, Lock, Move } from 'lucide-react';
 import axios from '../../axios';
 import { loadTensorFlowAndBlazeFace, startCamera, stopStream, startVoiceDetection, startMediaRecorder, stopMediaRecorder, blobToBase64 } from '../../services/proctorHelper';
 import useAuth from '../../hooks/useAuth';
@@ -126,6 +126,66 @@ function Quiz() {
   const lastViolationTime = useRef(0);
   const noFaceCount = useRef(0);
   const multiFaceCount = useRef(0);
+
+  // Draggable Floating Camera State & Event Logic (Touch & Mouse)
+  const [camPos, setCamPos] = useState(null);
+  const [isDraggingCam, setIsDraggingCam] = useState(false);
+  const isDraggingRef = useRef(false);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+
+  const handleDragStart = (e) => {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+
+    dragOffsetRef.current = {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+    isDraggingRef.current = true;
+    setIsDraggingCam(true);
+  };
+
+  useEffect(() => {
+    const handleDragMove = (e) => {
+      if (!isDraggingRef.current) return;
+      if (e.touches && e.cancelable) {
+        e.preventDefault();
+      }
+
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      const newLeft = clientX - dragOffsetRef.current.x;
+      const newTop = clientY - dragOffsetRef.current.y;
+
+      const maxLeft = Math.max(10, window.innerWidth - 150);
+      const maxTop = Math.max(10, window.innerHeight - 170);
+      const clampedLeft = Math.max(8, Math.min(newLeft, maxLeft));
+      const clampedTop = Math.max(8, Math.min(newTop, maxTop));
+
+      setCamPos({ left: clampedLeft, top: clampedTop });
+    };
+
+    const handleDragEnd = () => {
+      isDraggingRef.current = false;
+      setIsDraggingCam(false);
+    };
+
+    window.addEventListener('mousemove', handleDragMove);
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchmove', handleDragMove, { passive: false });
+    window.addEventListener('touchend', handleDragEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleDragMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchmove', handleDragMove);
+      window.removeEventListener('touchend', handleDragEnd);
+    };
+  }, []);
 
   // Handle compulsory camera toggle before exam start
   const handleToggleCamera = async () => {
@@ -815,10 +875,47 @@ function Quiz() {
         </div>
       )}
 
-      {/* Floating Webcam View (Proctoring Active) */}
+      {/* Floating Webcam View (Proctoring Active - Draggable on Mobile & PC) */}
       {gameState === 'quiz' && isProctorEnabled && (
-        <div className="floating-proctor-container">
+        <div
+          className="floating-proctor-container"
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+          style={{
+            cursor: isDraggingCam ? 'grabbing' : 'grab',
+            touchAction: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            boxShadow: isDraggingCam ? '0 15px 35px rgba(168, 85, 247, 0.45)' : '0 10px 25px rgba(0, 0, 0, 0.5)',
+            border: isDraggingCam ? '1.5px solid #a855f7' : '1px solid rgba(255, 255, 255, 0.1)',
+            transition: isDraggingCam ? 'none' : 'box-shadow 0.2s ease, border 0.2s ease',
+            ...(camPos ? {
+              left: `${camPos.left}px`,
+              top: `${camPos.top}px`,
+              right: 'auto',
+              bottom: 'auto'
+            } : {})
+          }}
+        >
           <div className="floating-camera-card">
+            {/* Drag Handle Top Bar */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.3rem',
+              padding: '0.25rem 0',
+              background: 'rgba(15, 23, 42, 0.85)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              fontSize: '0.65rem',
+              color: '#a78bfa',
+              fontWeight: 700,
+              letterSpacing: '0.03em'
+            }}>
+              <Move size={11} color="#a78bfa" />
+              <span>Drag / Move</span>
+            </div>
+
             <video
               ref={floatingVideoRef}
               autoPlay
