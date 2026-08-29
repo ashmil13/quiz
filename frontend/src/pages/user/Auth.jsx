@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, UserPlus, LogIn, BookOpen, Eye, EyeOff, CheckCircle2, Zap, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, UserPlus, LogIn, BookOpen, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import UserService from '../../services/user-services/User-Service';
 import useAuth from '../../hooks/useAuth';
 import '../../css/userstyle/login.css';
@@ -36,49 +36,6 @@ function Auth({ initialMode }) {
     setSuccess('');
   };
 
-  // Quick SuperAdmin Fill for Testing
-  const handleFillSuperAdmin = () => {
-    setMode('login');
-    setEmail('sumi@gmail.com');
-    setPassword('ashmilashmil');
-    setError('');
-  };
-
-  // Quick Instant Guest Entry (1-Click Instant Exam Access)
-  const handleQuickGuestEntry = async () => {
-    setLoading(true);
-    setError('');
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const guestEmail = `participant_${randomNum}@quiz.com`;
-    const guestPassword = `pass_${randomNum}`;
-    const guestName = `Participant ${randomNum}`;
-
-    try {
-      const response = await postRegister({ name: guestName, email: guestEmail, password: guestPassword, role: 'User' });
-      const data = response.data;
-      if (data && data.success) {
-        localStorage.setItem("accessToken", data.accessToken);
-        localStorage.setItem("role", "User");
-        localStorage.setItem("email", guestEmail);
-        localStorage.setItem("userId", data.userId || "");
-        localStorage.setItem("name", guestName);
-        
-        setAuth({
-          accessToken: data.accessToken,
-          role: "User",
-          email: guestEmail,
-          id: data.userId,
-          name: guestName
-        });
-        navigate('/user/quiz');
-      }
-    } catch (err) {
-      setError("Quick entry failed. Please type your email above.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,21 +53,11 @@ function Auth({ initialMode }) {
         const response = await postRegister({ name, email, password, role: 'User' });
         const data = response.data;
         if (data && data.success) {
-          setSuccess("Account created successfully! Signing you in...");
-          localStorage.setItem("accessToken", data.accessToken);
-          localStorage.setItem("role", "User");
-          localStorage.setItem("email", email);
-          localStorage.setItem("userId", data.userId || "");
-          localStorage.setItem("name", name || "User");
-          
-          setAuth({
-            accessToken: data.accessToken,
-            role: "User",
-            email,
-            id: data.userId,
-            name: name || "User"
-          });
-          setTimeout(() => navigate('/user/quiz'), 600);
+          setSuccess("Registration successful! Please sign in with your credentials.");
+          setName('');
+          setPassword('');
+          setConfirmPassword('');
+          setMode('login'); // Automatically switch to Sign In mode
         } else {
           throw new Error(data.error || "Registration failed.");
         }
@@ -120,7 +67,7 @@ function Auth({ initialMode }) {
         setLoading(false);
       }
     } else {
-      // Sign In Mode (With Smart Auto-Register Fallback)
+      // Sign In Mode
       setLoading(true);
       try {
         const response = await postLogin({ email, password });
@@ -152,35 +99,7 @@ function Auth({ initialMode }) {
           throw new Error(data.error || "Invalid credentials.");
         }
       } catch (err) {
-        const errMsg = err.response?.data?.error || err.message || '';
-        // If user is new, auto-register seamlessly
-        if (errMsg.includes('Invalid credentials') || errMsg.includes('not found')) {
-          try {
-            const autoName = email.split('@')[0] || 'User';
-            const regResponse = await postRegister({ name: autoName, email, password, role: 'User' });
-            const regData = regResponse.data;
-            if (regData && regData.success) {
-              localStorage.setItem("accessToken", regData.accessToken);
-              localStorage.setItem("role", "User");
-              localStorage.setItem("email", email);
-              localStorage.setItem("userId", regData.userId || "");
-              localStorage.setItem("name", autoName);
-
-              setAuth({
-                accessToken: regData.accessToken,
-                role: "User",
-                email,
-                id: regData.userId,
-                name: autoName
-              });
-              navigate('/user/quiz');
-              return;
-            }
-          } catch (autoRegErr) {
-            // ignore
-          }
-        }
-        setError(errMsg || 'Login failed');
+        setError(err.response?.data?.error || err.message || 'Login failed');
       } finally {
         setLoading(false);
       }
@@ -197,17 +116,17 @@ function Auth({ initialMode }) {
           </div>
           <h1 className="login-brand-name">Yaseen Quiz</h1>
           <p className="login-subtitle">
-            {mode === 'login' ? 'Simple & Fast Authentication' : 'Create your account to start playing'}
+            {mode === 'login' ? 'Sign in to test your knowledge' : 'Create your account to start playing'}
           </p>
         </div>
 
-        {/* Mode Switcher */}
+        {/* Tab Switcher */}
         <div className="auth-tab-wrapper" style={{
           display: 'flex',
           background: 'rgba(15, 23, 42, 0.6)',
           borderRadius: '12px',
           padding: '4px',
-          marginBottom: '1.5rem',
+          marginBottom: '1.75rem',
           border: '1px solid rgba(255, 255, 255, 0.08)'
         }}>
           <button
@@ -215,11 +134,11 @@ function Auth({ initialMode }) {
             onClick={() => handleSwitchMode('login')}
             style={{
               flex: 1,
-              padding: '0.6rem 0',
+              padding: '0.65rem 0',
               borderRadius: '9px',
               border: 'none',
               fontWeight: 700,
-              fontSize: '0.85rem',
+              fontSize: '0.875rem',
               cursor: 'pointer',
               background: mode === 'login' ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'transparent',
               color: mode === 'login' ? '#ffffff' : '#94a3b8',
@@ -234,11 +153,11 @@ function Auth({ initialMode }) {
             onClick={() => handleSwitchMode('signup')}
             style={{
               flex: 1,
-              padding: '0.6rem 0',
+              padding: '0.65rem 0',
               borderRadius: '9px',
               border: 'none',
               fontWeight: 700,
-              fontSize: '0.85rem',
+              fontSize: '0.875rem',
               cursor: 'pointer',
               background: mode === 'signup' ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'transparent',
               color: mode === 'signup' ? '#ffffff' : '#94a3b8',
@@ -250,55 +169,7 @@ function Auth({ initialMode }) {
           </button>
         </div>
 
-        {/* Quick Demo Helper Badges */}
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-          <button
-            type="button"
-            onClick={handleQuickGuestEntry}
-            disabled={loading}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              padding: '0.35rem 0.75rem',
-              borderRadius: '20px',
-              background: 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#34d399',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <Zap size={13} />
-            Instant Guest Play
-          </button>
-
-          <button
-            type="button"
-            onClick={handleFillSuperAdmin}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              padding: '0.35rem 0.75rem',
-              borderRadius: '20px',
-              background: 'rgba(168, 85, 247, 0.12)',
-              border: '1px solid rgba(168, 85, 247, 0.3)',
-              color: '#c084fc',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <ShieldCheck size={13} />
-            SuperAdmin Fill
-          </button>
-        </div>
-
-        {/* Messages */}
+        {/* Feedback Messages */}
         {error && <p className="login-error">{error}</p>}
         {success && (
           <div style={{
@@ -308,7 +179,7 @@ function Auth({ initialMode }) {
             borderRadius: '12px',
             border: '1px solid rgba(16, 185, 129, 0.25)',
             fontSize: '0.875rem',
-            marginBottom: '1.25rem',
+            marginBottom: '1.5rem',
             textAlign: 'left',
             display: 'flex',
             alignItems: 'center',
@@ -442,27 +313,27 @@ function Auth({ initialMode }) {
             disabled={loading}
             className="login-btn"
           >
-            {loading ? 'Processing...' : (
+            {loading ? (mode === 'login' ? 'Authenticating...' : 'Registering...') : (
               <>
                 {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-                {mode === 'login' ? 'Sign In & Start Quiz' : 'Create & Start Quiz'}
+                {mode === 'login' ? 'Sign In' : 'Create Account'}
               </>
             )}
           </button>
         </form>
 
         {/* Footer Redirect Toggle */}
-        <p className="login-redirect-text" style={{ marginTop: '1.25rem' }}>
+        <p className="login-redirect-text">
           {mode === 'login' ? (
             <>
-              New here?{' '}
+              Don't have an account?{' '}
               <button 
                 type="button" 
                 onClick={() => handleSwitchMode('signup')}
                 className="login-link"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
-                Create Account
+                Sign Up
               </button>
             </>
           ) : (
