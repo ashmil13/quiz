@@ -881,10 +881,6 @@ function Quiz() {
                         <span>Status:</span>
                         <strong style={{ color: attemptReport.status === 'Completed' ? '#10b981' : '#ef4444' }}>{attemptReport.status}</strong>
                       </li>
-                      <li style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.9rem' }}>
-                        <span>Score Obtained:</span>
-                        <strong style={{ color: '#ffffff' }}>{attemptReport.score} / {attemptReport.totalQuestions} ({Math.round((attemptReport.score / attemptReport.totalQuestions) * 100)}%)</strong>
-                      </li>
                     </ul>
                   </div>
                 )}
@@ -1160,12 +1156,9 @@ function Quiz() {
         {gameState === 'quiz' && (
           <div>
             {/* Upper Info */}
-            <div className="quiz-header">
+            <div className="quiz-header" style={{ justifyContent: 'center' }}>
               <span className="quiz-progress-text">
                 Question {currentIdx + 1} of {quizQuestions.length}
-              </span>
-              <span className="quiz-score-badge">
-                Score: {score}
               </span>
             </div>
 
@@ -1255,15 +1248,8 @@ function Quiz() {
             <p className="welcome-subtitle">
               {examStatus === 'Terminated' 
                 ? 'Your exam session was terminated due to proctoring violations.' 
-                : 'Here is how you performed in the Islamic Quiz Challenge.'}
+                : 'Your exam answers have been submitted successfully for SuperAdmin evaluation.'}
             </p>
-
-            <div className="result-stats-grid" style={{ display: 'flex', justifyContent: 'center' }}>
-              <div className="stat-box" style={{ minWidth: '160px' }}>
-                <div className="stat-val correct">{score} / {quizQuestions.length}</div>
-                <div className="stat-lbl">Correct</div>
-              </div>
-            </div>
 
             {/* AI Proctoring Performance Report Card */}
             {isProctorEnabled && (

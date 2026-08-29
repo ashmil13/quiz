@@ -1403,7 +1403,32 @@
   color: #ef4444;
 }
 
+@media (max-width: 768px) {
+  .floating-proctor-container {
+    top: 12px !important;
+    left: 12px !important;
+    bottom: auto !important;
+    right: auto !important;
+    width: 110px !important;
+    z-index: 9999 !important;
+  }
+  .floating-video {
+    height: 80px !important;
+  }
+}
+
 @media (max-width: 480px) {
+  .floating-proctor-container {
+    top: 10px !important;
+    left: 10px !important;
+    bottom: auto !important;
+    right: auto !important;
+    width: 105px !important;
+    z-index: 9999 !important;
+  }
+  .floating-video {
+    height: 72px !important;
+  }
   .quiz-wrapper {
     padding: 1rem 0.5rem !important;
   }
