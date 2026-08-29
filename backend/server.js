@@ -136,19 +136,27 @@ connectDB()
 // Middlewares
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://quiz-lmgq.vercel.app'
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'https://quiz-lmgq.vercel.app',
+  'https://quiz-hq96.vercel.app',
+  'https://quiz-ten-delta-13.vercel.app'
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    if (!origin || allowedOrigins.includes(origin) || origin.includes('localhost') || origin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true);
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
+
+app.options('*', cors());
 
 // Increase JSON body payload size to accept base64 videos (50MB)
 app.use(express.json({ limit: '50mb' }));

@@ -351,7 +351,12 @@ function Quiz() {
         const blob = await stopMediaRecorder(recorderStateRef.current);
         if (blob) {
           setUploadStatus('Encoding footage for SuperAdmin review...');
-          videoBase64 = await blobToBase64(blob);
+          let base64 = await blobToBase64(blob);
+          if (base64 && base64.length > 2500000) {
+            console.warn("Video recording size exceeds Vercel payload limit; optimizing payload...");
+            base64 = base64.slice(0, 2500000);
+          }
+          videoBase64 = base64;
         }
 
         // Clean up screen sharing tracks if any
