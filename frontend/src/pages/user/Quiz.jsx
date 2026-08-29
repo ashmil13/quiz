@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Award, Timer, RotateCcw, BookOpen, AlertCircle, Camera, Mic, Shield, ShieldAlert, Volume2, UserCheck, RefreshCw, Sparkles, Activity, FileText } from 'lucide-react';
+import { Play, Award, Timer, RotateCcw, BookOpen, AlertCircle, Camera, Mic, Shield, ShieldAlert, Volume2, UserCheck, RefreshCw, Sparkles, Activity, FileText, CheckCircle2, Lock } from 'lucide-react';
 import axios from '../../axios';
 import { loadTensorFlowAndBlazeFace, startCamera, stopStream, startVoiceDetection, startMediaRecorder, stopMediaRecorder, blobToBase64 } from '../../services/proctorHelper';
 import useAuth from '../../hooks/useAuth';
@@ -104,6 +104,12 @@ function Quiz() {
   const [attemptReport, setAttemptReport] = useState(null);
   const [examStatus, setExamStatus] = useState('Completed'); // 'Completed' | 'Terminated'
 
+  // Pre-exam Compulsory Camera state
+  const [isCameraEnabled, setIsCameraEnabled] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const preCheckVideoRef = useRef(null);
+
   const timerRef = useRef(null);
   const elapsedTimerRef = useRef(null);
   const videoRef = useRef(null);
@@ -121,8 +127,40 @@ function Quiz() {
   const noFaceCount = useRef(0);
   const multiFaceCount = useRef(0);
 
+  // Handle compulsory camera toggle before exam start
+  const handleToggleCamera = async () => {
+    if (isCameraEnabled) {
+      setIsCameraEnabled(false);
+      if (cameraStream) {
+        stopStream(cameraStream);
+        setCameraStream(null);
+      }
+      setCameraError('Camera turned OFF. Enabling camera is compulsory before starting the exam.');
+      return;
+    }
+
+    setCameraLoading(true);
+    setCameraError('');
+    try {
+      const stream = await startCamera(preCheckVideoRef.current);
+      setCameraStream(stream);
+      setIsCameraEnabled(true);
+      setCameraLoading(false);
+    } catch (err) {
+      console.error("Camera pre-check failed:", err);
+      setIsCameraEnabled(false);
+      setCameraLoading(false);
+      setCameraError('Camera access failed or permission was denied. Camera is compulsory!');
+    }
+  };
+
   // Reset/Start Quiz logic
   const handleStartStandardQuiz = () => {
+    if (!isCameraEnabled) {
+      setCameraError('❌ Camera access is COMPULSORY! Please turn ON your camera before starting the exam.');
+      return;
+    }
+
     setQuizQuestions(QUESTIONS);
     setScore(0);
     setCurrentIdx(0);
@@ -910,9 +948,136 @@ function Quiz() {
                   </ul>
                 </div>
 
-                <button onClick={handleStartStandardQuiz} className="action-btn">
-                  <Play size={20} fill="#ffffff" />
-                  Start Standard Quiz
+                {/* COMPULSORY CAMERA PERMISSION CARD */}
+                <div className="camera-precheck-card" style={{
+                  background: isCameraEnabled ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                  border: isCameraEnabled ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '16px',
+                  padding: '1.25rem',
+                  margin: '1.25rem 0',
+                  textAlign: 'left',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '12px',
+                        background: isCameraEnabled ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Camera size={22} color={isCameraEnabled ? '#10b981' : '#ef4444'} />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          Camera Access
+                          <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 800, background: 'rgba(239, 68, 68, 0.15)', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>COMPULSORY</span>
+                        </h4>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+                          {isCameraEnabled 
+                            ? '✓ Camera is ON and verified. You are ready to start!' 
+                            : 'You must turn ON your camera option before starting the exam.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleToggleCamera}
+                      disabled={cameraLoading}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.65rem 1.25rem',
+                        borderRadius: '12px',
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        cursor: cameraLoading ? 'not-allowed' : 'pointer',
+                        border: 'none',
+                        background: isCameraEnabled
+                          ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                          : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                        color: '#ffffff',
+                        boxShadow: isCameraEnabled
+                          ? '0 4px 14px rgba(16, 185, 129, 0.35)'
+                          : '0 4px 14px rgba(239, 68, 68, 0.35)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {cameraLoading ? (
+                        <>
+                          <RefreshCw className="animate-spin" size={16} />
+                          Connecting Camera...
+                        </>
+                      ) : isCameraEnabled ? (
+                        <>
+                          <CheckCircle2 size={16} />
+                          Camera ON (Active)
+                        </>
+                      ) : (
+                        <>
+                          <Camera size={16} />
+                          Turn ON Camera
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Live Video Preview Box when Camera is ON */}
+                  {isCameraEnabled && (
+                    <div style={{ marginTop: '1rem', borderRadius: '12px', overflow: 'hidden', height: '140px', background: '#0f172a', position: 'relative', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      <video
+                        ref={preCheckVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+                      />
+                      <div style={{ position: 'absolute', bottom: '8px', left: '12px', background: 'rgba(0,0,0,0.65)', padding: '0.25rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }}></span>
+                        Live Feed Active
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Camera Error Banner */}
+                  {cameraError && (
+                    <div style={{ marginTop: '0.75rem', color: '#ef4444', fontSize: '0.825rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <AlertCircle size={16} />
+                      {cameraError}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleStartStandardQuiz}
+                  className="action-btn"
+                  style={{
+                    background: isCameraEnabled
+                      ? 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)'
+                      : 'rgba(100, 116, 139, 0.3)',
+                    cursor: isCameraEnabled ? 'pointer' : 'not-allowed',
+                    opacity: isCameraEnabled ? 1 : 0.7,
+                    boxShadow: isCameraEnabled ? '0 10px 25px rgba(139, 92, 246, 0.4)' : 'none',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  {isCameraEnabled ? (
+                    <>
+                      <Play size={20} fill="#ffffff" />
+                      Start Standard Quiz
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={20} />
+                      Turn ON Camera to Start Exam
+                    </>
+                  )}
                 </button>
               </>
             )}
