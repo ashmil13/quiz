@@ -359,7 +359,7 @@ function Quiz() {
       const nextScore = Math.min(100, prev + weight);
       if (nextScore >= 100) {
         setTimeout(() => {
-          handleAutoSubmit("AI suspicion index reached 100%");
+          handleAutoSubmit("Exam terminated due to violating the rules of the exam");
         }, 1200);
       }
       return nextScore;
@@ -369,13 +369,13 @@ function Quiz() {
       const nextWarnings = prev + 1;
       setWarningModal({
         show: true,
-        title: `AI System Warning (${nextWarnings}/${maxWarnings})`,
+        title: `Exam Warning (${nextWarnings}/${maxWarnings})`,
         message: `${type}: ${message}`
       });
 
       if (nextWarnings >= maxWarnings) {
         setTimeout(() => {
-          handleAutoSubmit(`Violations limit exceeded (${maxWarnings}/${maxWarnings} warnings)`);
+          handleAutoSubmit(`Exam terminated due to violating the rules of the exam`);
         }, 1200);
       }
       return nextWarnings;
@@ -938,18 +938,6 @@ function Quiz() {
                 <span className="indicator-label">Gaze: {faceStatus === 'Unfocused' ? 'Unfocused' : 'Focused'}</span>
               </div>
             </div>
-            <div className="proctor-meta-info">
-              <span className="score-tag" style={{
-                color: suspicionScore > 0 ? '#f97316' : '#10b981',
-                background: suspicionScore > 0 ? 'rgba(249, 115, 22, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                fontWeight: 700,
-                fontSize: '0.725rem',
-                padding: '0.15rem 0.4rem',
-                borderRadius: '4px'
-              }}>
-                AI Suspicion: {suspicionScore}%
-              </span>
-            </div>
           </div>
         </div>
       )}
@@ -1332,97 +1320,26 @@ function Quiz() {
         {gameState === 'result' && (
           <div className="result-screen">
             <div className="result-circle-wrapper" style={{
-              background: examStatus === 'Terminated' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(168, 85, 247, 0.1)',
-              borderColor: examStatus === 'Terminated' ? '#ef4444' : '#a855f7'
+              background: examStatus === 'Terminated' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+              borderColor: examStatus === 'Terminated' ? '#ef4444' : '#10b981'
             }}>
               {examStatus === 'Terminated' ? (
                 <ShieldAlert size={80} color="#ef4444" />
               ) : (
-                <Award size={80} color="#a855f7" />
+                <CheckCircle2 size={80} color="#10b981" />
               )}
             </div>
 
             <h1 className="welcome-title" style={{
               color: examStatus === 'Terminated' ? '#ef4444' : '#ffffff'
             }}>
-              {examStatus === 'Terminated' ? 'Exam Terminated!' : 'Quiz Completed!'}
+              {examStatus === 'Terminated' ? 'Exam Terminated!' : 'Exam Completed!'}
             </h1>
             <p className="welcome-subtitle">
               {examStatus === 'Terminated' 
-                ? 'Your exam session was terminated due to proctoring violations.' 
-                : 'Your exam answers have been submitted successfully for SuperAdmin evaluation.'}
+                ? 'Your exam was terminated due to violating the rules of the exam.' 
+                : 'You have completed the exam. Your response has been submitted successfully.'}
             </p>
-
-            {/* AI Proctoring Performance Report Card */}
-            {isProctorEnabled && (
-              <div className="proctoring-report-card">
-                <div className="report-header">
-                  <Shield size={20} className="shield-glow" />
-                  <h3>AI Proctoring & Anti-Cheat Report</h3>
-                </div>
-
-                <div className="report-body">
-                  <div className="gauge-score-section">
-                    <div className="suspicion-gauge-wrapper">
-                      <div className="suspicion-val-glow" style={{
-                        color: suspicionScore > 0 ? '#f97316' : '#10b981',
-                        textShadow: suspicionScore > 0 ? '0 0 10px rgba(249, 115, 22, 0.3)' : '0 0 10px rgba(16, 185, 129, 0.3)',
-                        fontSize: '2.25rem',
-                        fontWeight: 900
-                      }}>
-                        {suspicionScore}%
-                      </div>
-                      <span className="gauge-label">AI Suspicion Index</span>
-                    </div>
-
-                    <div className="verdict-summary">
-                      <span className="verdict-title">System Verdict:</span>
-                      {suspicionScore >= 60 ? (
-                        <span className="verdict-badge flaged">FLAGGED FOR REVIEW</span>
-                      ) : suspicionScore >= 30 ? (
-                        <span className="verdict-badge warning">SUSPICIOUS ACTIVITIES</span>
-                      ) : (
-                        <span className="verdict-badge passed">PASSED PROCTORING</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="proctor-quick-stats">
-                    <div className="q-stat">
-                      <span className="q-val">{warnings}</span>
-                      <span className="q-lbl">Warnings</span>
-                    </div>
-                    <div className="q-stat">
-                      <span className="q-val">{formatElapsedTime(elapsedSeconds)}</span>
-                      <span className="q-lbl">Test Duration</span>
-                    </div>
-                  </div>
-
-                  {/* Violation Timelines */}
-                  <div className="timeline-container">
-                    <h4 className="timeline-title">
-                      <FileText size={14} />
-                      Exam Proctor Log
-                    </h4>
-                    {proctorLogs.length === 0 ? (
-                      <p className="empty-logs">No violations detected during this exam session. Excellent compliance!</p>
-                    ) : (
-                      <div className="timeline-list">
-                        {proctorLogs.map((log, idx) => (
-                          <div key={idx} className="timeline-item">
-                            <div className="time-badge">{log.time}</div>
-                            <div className="log-details">
-                              <span className="log-type">{log.type}</span>
-                              <span className="log-msg">{log.message}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
 
             <button 
               onClick={() => {
@@ -1435,7 +1352,8 @@ function Quiz() {
                   : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 boxShadow: examStatus === 'Terminated'
                   ? '0 4px 12px rgba(239, 68, 68, 0.2)'
-                  : '0 4px 12px rgba(16, 185, 129, 0.2)'
+                  : '0 4px 12px rgba(16, 185, 129, 0.2)',
+                marginTop: '2rem'
               }}
             >
               {examStatus === 'Terminated' ? (
@@ -1446,7 +1364,7 @@ function Quiz() {
               ) : (
                 <>
                   <UserCheck size={20} />
-                  Submit & Finish
+                  Finish Exam
                 </>
               )}
             </button>
