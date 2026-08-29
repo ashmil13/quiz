@@ -103,7 +103,7 @@
 
 .signup-input {
   width: 100%;
-  padding: 0.8rem 1rem 0.8rem 2.75rem;
+  padding: 0.8rem 2.75rem 0.8rem 2.75rem;
   box-sizing: border-box;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -113,6 +113,27 @@
   font-family: inherit;
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signup-password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  z-index: 5;
+}
+
+.signup-password-toggle:hover {
+  color: #a855f7;
 }
 
 /* Custom styling for select dropdown */

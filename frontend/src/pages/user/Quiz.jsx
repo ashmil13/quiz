@@ -161,10 +161,13 @@ function Quiz() {
       const newLeft = clientX - dragOffsetRef.current.x;
       const newTop = clientY - dragOffsetRef.current.y;
 
-      const maxLeft = Math.max(10, window.innerWidth - 150);
-      const maxTop = Math.max(10, window.innerHeight - 170);
-      const clampedLeft = Math.max(8, Math.min(newLeft, maxLeft));
-      const clampedTop = Math.max(8, Math.min(newTop, maxTop));
+      const containerWidth = isMobile ? 110 : 140;
+      const containerHeight = isMobile ? 140 : 180;
+
+      const maxLeft = Math.max(5, window.innerWidth - containerWidth - 5);
+      const maxTop = Math.max(5, window.innerHeight - containerHeight - 5);
+      const clampedLeft = Math.max(5, Math.min(newLeft, maxLeft));
+      const clampedTop = Math.max(5, Math.min(newTop, maxTop));
 
       setCamPos({ left: clampedLeft, top: clampedTop });
     };
@@ -178,14 +181,16 @@ function Quiz() {
     window.addEventListener('mouseup', handleDragEnd);
     window.addEventListener('touchmove', handleDragMove, { passive: false });
     window.addEventListener('touchend', handleDragEnd);
+    window.addEventListener('touchcancel', handleDragEnd);
 
     return () => {
       window.removeEventListener('mousemove', handleDragMove);
       window.removeEventListener('mouseup', handleDragEnd);
       window.removeEventListener('touchmove', handleDragMove);
       window.removeEventListener('touchend', handleDragEnd);
+      window.removeEventListener('touchcancel', handleDragEnd);
     };
-  }, []);
+  }, [isMobile]);
 
   // Handle compulsory camera toggle before exam start
   const handleToggleCamera = async () => {

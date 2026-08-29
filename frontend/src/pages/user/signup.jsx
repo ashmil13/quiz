@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, User, UserPlus, BookOpen } from 'lucide-react';
+import { Mail, Lock, User, UserPlus, BookOpen, Eye, EyeOff } from 'lucide-react';
 import UserService from '../../services/user-services/User-Service';
 import '../../css/userstyle/sighup.css';
 
@@ -11,6 +11,8 @@ function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -99,13 +101,21 @@ function Signup() {
             <div className="signup-input-wrapper">
               <Lock className="signup-input-icon" size={18} />
               <input 
-                type="password" 
+                type={showPassword ? 'text' : 'password'} 
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)} 
                 className="signup-input"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                className="signup-password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -114,13 +124,21 @@ function Signup() {
             <div className="signup-input-wrapper">
               <Lock className="signup-input-icon" size={18} />
               <input 
-                type="password" 
+                type={showConfirmPassword ? 'text' : 'password'} 
                 required 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)} 
                 className="signup-input"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                className="signup-password-toggle"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
