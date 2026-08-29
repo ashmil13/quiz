@@ -21,6 +21,9 @@ dotenv.config();
 // Create Express app
 const app = express();
 
+// Disable ETag caching to prevent 304 CORS header cache issues on Vercel
+app.disable('etag');
+
 // Seed SuperAdmin account
 const seedSuperAdmin = async () => {
   try {
