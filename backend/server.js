@@ -162,6 +162,37 @@ app.options('*', cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Serverless-friendly DB Connection Middleware
+let dbInitPromise = null;
+const ensureDbConnected = async (req, res, next) => {
+  // Skip DB check for OPTIONS preflight requests
+  if (req.method === 'OPTIONS') return next();
+
+  try {
+    const mongoose = (await import('mongoose')).default;
+    if (mongoose.connection.readyState !== 1) {
+      if (!dbInitPromise) {
+        dbInitPromise = (async () => {
+          await connectDB();
+          await seedSuperAdmin();
+          await seedQuizData();
+        })();
+      }
+      await dbInitPromise;
+    }
+    next();
+  } catch (err) {
+    dbInitPromise = null; // Reset promise to retry on next request
+    console.error('❌ DB Connection error in middleware:', err.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Database connection failed: ' + err.message
+    });
+  }
+};
+
+app.use(ensureDbConnected);
+
 // Serve uploads folder statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -180,6 +211,15 @@ app.get('/', (req, res) => {
       quiz: '/api/quiz',
       reports: '/api/exam-report'
     },
+  });
+});
+
+// Global Express Error Handler
+app.use((err, req, res, next) => {
+  console.error('❌ Global Server Error:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal Server Error'
   });
 });
 
