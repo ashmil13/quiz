@@ -108,6 +108,7 @@ function Quiz() {
   const [isCameraEnabled, setIsCameraEnabled] = useState(false);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [cameraPermissionBlocked, setCameraPermissionBlocked] = useState(false);
   const preCheckVideoRef = useRef(null);
 
   const timerRef = useRef(null);
@@ -196,6 +197,7 @@ function Quiz() {
   const handleToggleCamera = async () => {
     if (isCameraEnabled) {
       setIsCameraEnabled(false);
+      setCameraPermissionBlocked(false);
       if (cameraStream) {
         stopStream(cameraStream);
         setCameraStream(null);
@@ -206,16 +208,20 @@ function Quiz() {
 
     setCameraLoading(true);
     setCameraError('');
+    setCameraPermissionBlocked(false);
+
     try {
       const stream = await startCamera(preCheckVideoRef.current);
       setCameraStream(stream);
       setIsCameraEnabled(true);
       setCameraLoading(false);
+      setCameraPermissionBlocked(false);
     } catch (err) {
       console.error("Camera pre-check failed:", err);
       setIsCameraEnabled(false);
       setCameraLoading(false);
-      setCameraError('Camera access failed or permission was denied. Camera is compulsory!');
+      setCameraPermissionBlocked(true);
+      setCameraError('Camera permission is disallowed or blocked on your phone/browser.');
     }
   };
 
@@ -1141,6 +1147,51 @@ function Quiz() {
                     <div style={{ marginTop: '0.75rem', color: '#ef4444', fontSize: '0.825rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <AlertCircle size={16} />
                       {cameraError}
+                    </div>
+                  )}
+
+                  {/* Step-by-step guidance box when camera permission is disallowed/blocked */}
+                  {cameraPermissionBlocked && (
+                    <div style={{
+                      marginTop: '0.85rem',
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      textAlign: 'left'
+                    }}>
+                      <div style={{ color: '#f87171', fontSize: '0.875rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <ShieldAlert size={16} />
+                        How to Allow Camera Permission on Phone & Browser:
+                      </div>
+                      <ol style={{ margin: '0 0 0.85rem 1.1rem', padding: 0, color: '#cbd5e1', fontSize: '0.8rem', lineHeight: '1.45' }}>
+                        <li>Look at the browser address bar at the top/bottom of your phone screen.</li>
+                        <li>Tap the <strong>Lock 🔒</strong> or <strong>Camera / Tune ⚙️</strong> icon.</li>
+                        <li>Tap <strong>Permissions / Site Settings</strong> and change <strong>Camera</strong> to <strong>ALLOW</strong>.</li>
+                        <li>Then click the button below to grant permission and activate your camera.</li>
+                      </ol>
+                      <button
+                        type="button"
+                        onClick={handleToggleCamera}
+                        disabled={cameraLoading}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.6rem 1.1rem',
+                          borderRadius: '10px',
+                          background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.825rem',
+                          border: 'none',
+                          cursor: cameraLoading ? 'not-allowed' : 'pointer',
+                          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)'
+                        }}
+                      >
+                        <RefreshCw size={15} className={cameraLoading ? 'animate-spin' : ''} />
+                        {cameraLoading ? 'Requesting Permission...' : 'Allow Camera & Re-try'}
+                      </button>
                     </div>
                   )}
                 </div>

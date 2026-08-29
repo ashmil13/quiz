@@ -27,14 +27,33 @@ export const startCamera = async (videoElement) => {
     audio: false
   };
 
-  const stream = await navigator.mediaDevices.getUserMedia(constraints);
-  if (videoElement) {
-    videoElement.srcObject = stream;
-    videoElement.setAttribute("playsinline", "true"); // critical for iOS Safari
-    videoElement.muted = true;
-    await videoElement.play().catch(err => console.log("Video play interrupted:", err));
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    if (videoElement) {
+      videoElement.srcObject = stream;
+      videoElement.setAttribute("playsinline", "true"); // critical for iOS Safari
+      videoElement.muted = true;
+      await videoElement.play().catch(err => console.log("Video play interrupted:", err));
+    }
+    return stream;
+  } catch (err) {
+    // If specific constraints failed (e.g. on mobile devices), retry with simple { video: true }
+    if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        if (videoElement) {
+          videoElement.srcObject = fallbackStream;
+          videoElement.setAttribute("playsinline", "true");
+          videoElement.muted = true;
+          await videoElement.play().catch(err => console.log("Video play interrupted:", err));
+        }
+        return fallbackStream;
+      } catch (fallbackErr) {
+        throw fallbackErr;
+      }
+    }
+    throw err;
   }
-  return stream;
 };
 
 // Stop webcam stream tracks
