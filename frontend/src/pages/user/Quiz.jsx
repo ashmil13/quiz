@@ -1016,29 +1016,54 @@ function Quiz() {
                 </div>
 
                 <div className="rules-card">
-                  <h3 className="rules-title">Quiz Instructions:</h3>
+                  <h3 className="rules-title">Quiz Instructions / പരീക്ഷാ നിർദ്ദേശങ്ങൾ:</h3>
                   <ul className="rules-list">
                     <li>
                       <Timer size={18} />
-                      Each question has a 30-second time limit.
+                      <div>
+                        <div style={{ color: '#f8fafc', fontWeight: 600 }}>Each question has a 30-second time limit.</div>
+                        <div style={{ fontSize: '0.825rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                          ഓരോ ചോദ്യത്തിനും 30 സെക്കൻഡ് സമയപരിധിയുണ്ട്.
+                        </div>
+                      </div>
                     </li>
                     <li>
                       <Award size={18} />
-                      You get 1 point for each correct answer.
+                      <div>
+                        <div style={{ color: '#f8fafc', fontWeight: 600 }}>You get 1 point for each correct answer.</div>
+                        <div style={{ fontSize: '0.825rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                          ഓരോ ശരിയായ ഉത്തരത്തിനും 1 പോയിന്റ് ലഭിക്കും.
+                        </div>
+                      </div>
                     </li>
                     <li>
                       <AlertCircle size={18} />
-                      No points are deducted for wrong answers.
+                      <div>
+                        <div style={{ color: '#f8fafc', fontWeight: 600 }}>No points are deducted for wrong answers.</div>
+                        <div style={{ fontSize: '0.825rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                          തെറ്റായ ഉത്തരങ്ങൾക്ക് പോയിന്റുകൾ കുറയ്ക്കില്ല.
+                        </div>
+                      </div>
                     </li>
                     {isProctorEnabled && (
                       <>
                         <li className="proctor-rule">
                           <Shield size={18} />
-                          Active proctoring will monitor your camera, eye focus, and browser focus.
+                          <div>
+                            <div style={{ color: '#f8fafc', fontWeight: 600 }}>Active proctoring will monitor your camera, eye focus, and browser focus.</div>
+                            <div style={{ fontSize: '0.825rem', color: '#a78bfa', marginTop: '0.2rem' }}>
+                              നിങ്ങളുടെ ക്യാമറ, കണ്ണുകളുടെ ശ്രദ്ധ, ബ്രൗസർ ഫോക്കസ് എന്നിവ എഐ പ്രോക്ടറിംഗ് വഴി നിരീക്ഷിക്കുന്നതാണ്.
+                            </div>
+                          </div>
                         </li>
                         <li className="proctor-rule" style={{ color: '#f87171' }}>
                           <Shield size={18} color="#f87171" />
-                          Detection of multiple faces or secondary devices will result in immediate exam termination.
+                          <div>
+                            <div style={{ color: '#f87171', fontWeight: 600 }}>Detection of multiple faces or secondary devices will result in immediate exam termination.</div>
+                            <div style={{ fontSize: '0.825rem', color: '#fca5a5', marginTop: '0.2rem' }}>
+                              ഒന്നിൽ കൂടുതൽ ആളുകളെ കാണുകയോ മറ്റു ഫോൺ/ഉപകരണങ്ങൾ ഉപയോഗിക്കുകയോ ചെയ്താൽ പരീക്ഷ ഉടനടി റദ്ദാക്കുന്നതാണ്.
+                            </div>
+                          </div>
                         </li>
                       </>
                     )}
