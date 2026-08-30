@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Award, Timer, RotateCcw, BookOpen, AlertCircle, Camera, Mic, Shield, ShieldAlert, Volume2, UserCheck, RefreshCw, Sparkles, Activity, FileText, CheckCircle2, Lock, Move } from 'lucide-react';
+import { Play, Award, Timer, RotateCcw, BookOpen, AlertCircle, AlertTriangle, Camera, Mic, Shield, ShieldAlert, Volume2, UserCheck, RefreshCw, Sparkles, Activity, FileText, CheckCircle2, Lock, Move } from 'lucide-react';
 import axios from '../../axios';
 import { loadTensorFlowAndBlazeFace, startCamera, stopStream, startVoiceDetection, startMediaRecorder, stopMediaRecorder, blobToBase64 } from '../../services/proctorHelper';
 import useAuth from '../../hooks/useAuth';
@@ -836,59 +836,61 @@ function Quiz() {
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
-  // Proctoring Violations System
+  // Proctoring Violations System - Gives 1 Warning Chance before terminating on 2nd violation
   const triggerViolation = (type, message) => {
     if (gameState !== 'quiz') return;
 
     const now = Date.now();
-    // Limit alerts to once every 6 seconds to prevent double triggers
-    if (now - lastViolationTime.current < 6000) return;
+    // Limit alerts to once every 4 seconds to prevent double triggers
+    if (now - lastViolationTime.current < 4000) return;
     lastViolationTime.current = now;
 
     const timeString = formatElapsedTime(elapsedSeconds);
     const newLog = { time: timeString, type, message };
-    setProctorLogs(prev => [...prev, newLog]);
+
+    let currentLogs = [];
+    setProctorLogs(prev => {
+      currentLogs = [...prev, newLog];
+      return currentLogs;
+    });
 
     let weight = 0;
-    if (type === 'App Switch') weight = 34; // 3 tab switches = 100% suspicion
-    if (type === 'No Face') weight = 15;
-    if (type === 'Multiple Faces') weight = 20;
-    if (type === 'Eye Focus') weight = 20;
-    if (type === 'Proctor Error') weight = 25;
+    if (type === 'App Switch') weight = 50;
+    if (type === 'Screen Split') weight = 50;
+    if (type === 'Focus Loss') weight = 50;
+    if (type === 'No Face') weight = 25;
+    if (type === 'Multiple Faces') weight = 50;
+    if (type === 'Eye Focus') weight = 25;
 
-    setSuspicionScore(prev => {
-      const nextScore = Math.min(100, prev + weight);
-      if (nextScore >= 100) {
-        setTimeout(() => {
-          handleAutoSubmit("Exam terminated due to violating the rules of the exam");
-        }, 1200);
-      }
-      return nextScore;
-    });
+    setSuspicionScore(prev => Math.min(100, prev + weight));
 
     setWarnings(prev => {
       const nextWarnings = prev + 1;
-      setWarningModal({
-        show: true,
-        title: `Exam Warning (${nextWarnings}/${maxWarnings})`,
-        message: `${type}: ${message}`
-      });
 
-      if (nextWarnings >= maxWarnings) {
+      if (nextWarnings < maxWarnings) {
+        // 1st VIOLATION: Show warning alert modal popup (Give 1 Chance)!
+        setWarningModal({
+          show: true,
+          title: `⚠️ Exam Violation Warning (1 / ${maxWarnings})`,
+          message: `${message} This is your 1st warning. Next violation will automatically terminate your exam!`
+        });
+      } else {
+        // 2nd VIOLATION: Terminate exam immediately!
+        setWarningModal({ show: false, title: '', message: '' });
         setTimeout(() => {
-          handleAutoSubmit(`Exam terminated due to violating the rules of the exam`);
-        }, 1200);
+          handleAutoSubmit(`Exam terminated: Exceeded warning limit (${type}: ${message})`, currentLogs);
+        }, 500);
       }
       return nextWarnings;
     });
   };
 
-  const handleAutoSubmit = (reason) => {
+  const handleAutoSubmit = (reason, logs = proctorLogs) => {
     setWarningModal({ show: false, title: '', message: '' });
 
     // Log the auto submit event
     const timeString = formatElapsedTime(elapsedSeconds);
-    const updatedLogs = [...proctorLogs, { time: timeString, type: 'Exam Terminated', message: reason }];
+    const updatedLogs = [...logs, { time: timeString, type: 'Exam Terminated', message: reason }];
     setProctorLogs(updatedLogs);
 
     // Call exam finished directly with updated logs
@@ -1198,7 +1200,7 @@ function Quiz() {
         }
       } else if (predictions.length > 1) {
         setFaceStatus("Multi-Face");
-        handleAutoSubmit("Exam terminated: Multiple faces or secondary devices detected in webcam view");
+        triggerViolation("Multiple Faces", "Multiple faces or secondary person detected in webcam view.");
         return;
       } else {
         const prediction = predictions[0];
@@ -1250,26 +1252,26 @@ function Quiz() {
 
     // Check on quiz load if screen is split (skip on mobile since orientation/viewport size differs)
     if (!isMobile && window.innerWidth < window.screen.width * 0.85) {
-      handleAutoSubmit("Exam terminated: Screen split detected (window not maximized)");
+      triggerViolation("Screen Split", "Screen split or non-maximized window detected. Please stay in full screen mode!");
       return;
     }
 
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') {
-        handleAutoSubmit("Exam terminated: Window minimized or tab switched");
+        triggerViolation("App Switch", "Window minimized or tab switched during exam.");
       }
     };
 
     const handleWindowBlur = () => {
       // Ignore blur on mobile to prevent false positives from native keyboards/overlays
       if (!isMobile) {
-        handleAutoSubmit("Exam terminated: Clicked outside the exam window");
+        triggerViolation("Focus Loss", "Clicked outside or left the exam window bounds.");
       }
     };
 
     const handleResize = () => {
       if (!isMobile && window.innerWidth < window.screen.width * 0.85) {
-        handleAutoSubmit("Exam terminated: Screen split or resized window detected");
+        triggerViolation("Screen Split", "Screen split or resized window detected.");
       }
     };
 
@@ -2034,6 +2036,77 @@ function Quiz() {
           </div>
         )}
       </div>
+
+      {/* 1st Violation Warning Alert Modal */}
+      {warningModal.show && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(15, 23, 42, 0.88)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          padding: '1.5rem',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{
+            background: '#0c1322',
+            border: '2px solid rgba(245, 158, 11, 0.5)',
+            borderRadius: '24px',
+            padding: '2rem 1.75rem',
+            maxWidth: '460px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.6)'
+          }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              background: 'rgba(245, 158, 11, 0.15)',
+              border: '2px solid rgba(245, 158, 11, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem auto'
+            }}>
+              <AlertTriangle size={36} color="#f59e0b" />
+            </div>
+
+            <h3 style={{ margin: '0 0 0.75rem 0', color: '#fbbf24', fontSize: '1.3rem', fontWeight: 800 }}>
+              {warningModal.title}
+            </h3>
+
+            <p style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 1.5rem 0' }}>
+              {warningModal.message}
+            </p>
+
+            <button
+              onClick={() => setWarningModal({ show: false, title: '', message: '' })}
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '0.8rem 1.75rem',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(245, 158, 11, 0.35)',
+                transition: 'all 0.2s',
+                width: '100%'
+              }}
+            >
+              I Understand & Resume Exam
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
