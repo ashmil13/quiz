@@ -116,7 +116,7 @@ function Auth({ initialMode }) {
           </div>
           <h1 className="login-brand-name">Yaseen Quiz</h1>
           <p className="login-subtitle">
-            {mode === 'login' ? 'Sign in to test your knowledge' : 'Create your account to start playing'}
+            {mode === 'login' ? 'Sign in to test your knowledge' : 'Register to start playing'}
           </p>
         </div>
 
@@ -165,7 +165,7 @@ function Auth({ initialMode }) {
               transition: 'all 0.25s ease'
             }}
           >
-            Sign Up
+            Register
           </button>
         </div>
 
@@ -316,7 +316,7 @@ function Auth({ initialMode }) {
             {loading ? (mode === 'login' ? 'Authenticating...' : 'Registering...') : (
               <>
                 {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-                {mode === 'login' ? 'Sign In' : 'Create Account'}
+                {mode === 'login' ? 'Sign In' : 'Register'}
               </>
             )}
           </button>
@@ -333,7 +333,7 @@ function Auth({ initialMode }) {
                 className="login-link"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
-                Sign Up
+                Register
               </button>
             </>
           ) : (
