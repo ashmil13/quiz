@@ -774,7 +774,7 @@ function SuperAdminDashboard() {
                               )}
                             </td>
                             <td style={{ padding: '1rem', color: '#ffffff', fontWeight: 600 }}>
-                              {report.score} / {report.totalQuestions} ({Math.round((report.score / report.totalQuestions) * 100)}%)
+                              {report.score} / {report.totalQuestions} Points ({Math.round((report.score / report.totalQuestions) * 100)}%)
                             </td>
                             <td style={{ padding: '1rem' }}>
                               <span style={{
@@ -1111,13 +1111,13 @@ function SuperAdminDashboard() {
                                   </span>
                                 )}
                               </td>
-                              <td style={{ padding: '1rem', color: '#cbd5e1' }}>
-                                {userReport ? (
-                                  <span>Score: {userReport.score}/{userReport.totalQuestions} ({Math.round((userReport.score / userReport.totalQuestions) * 100)}%)</span>
-                                ) : (
-                                  <span style={{ color: '#64748b' }}>N/A</span>
-                                )}
-                              </td>
+                               <td style={{ padding: '1rem', color: '#cbd5e1' }}>
+                                 {userReport ? (
+                                   <span>Score: {userReport.score}/{userReport.totalQuestions} Points ({Math.round((userReport.score / userReport.totalQuestions) * 100)}%)</span>
+                                 ) : (
+                                   <span style={{ color: '#64748b' }}>N/A</span>
+                                 )}
+                               </td>
                               <td style={{ padding: '1rem', textAlign: 'center' }}>
                                 {userReport && !user.retakeAllowed ? (
                                   <button
@@ -1349,8 +1349,19 @@ function SuperAdminDashboard() {
                             </button>
                           </div>
 
-                          <h4 style={{ margin: '0 0 0.75rem 0', paddingRight: '3rem', fontSize: '1rem', color: '#f8fafc', fontWeight: 700 }}>
-                            {idx + 1}. {q.question}
+                          <h4 style={{ margin: '0 0 0.75rem 0', paddingRight: '3rem', fontSize: '1rem', color: '#f8fafc', fontWeight: 700, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
+                            <span>{idx + 1}. {q.question}</span>
+                            <span style={{
+                              background: 'rgba(168, 85, 247, 0.12)',
+                              border: '1px solid rgba(168, 85, 247, 0.3)',
+                              color: '#c084fc',
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '8px',
+                              fontSize: '0.75rem',
+                              fontWeight: 700
+                            }}>
+                              1 Point
+                            </span>
                           </h4>
 
                           <div style={{

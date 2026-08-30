@@ -1835,9 +1835,20 @@ function Quiz() {
         {gameState === 'quiz' && (
           <div>
             {/* Upper Info */}
-            <div className="quiz-header" style={{ justifyContent: 'center' }}>
+            <div className="quiz-header" style={{ justifyContent: 'center', alignItems: 'center', gap: '0.75rem' }}>
               <span className="quiz-progress-text">
                 Question {currentIdx + 1} of {quizQuestions.length}
+              </span>
+              <span style={{
+                background: 'rgba(168, 85, 247, 0.15)',
+                border: '1px solid rgba(168, 85, 247, 0.3)',
+                color: '#c084fc',
+                padding: '0.2rem 0.65rem',
+                borderRadius: '12px',
+                fontSize: '0.8rem',
+                fontWeight: 700
+              }}>
+                1 Point
               </span>
             </div>
 
@@ -1967,7 +1978,7 @@ function Quiz() {
                     Exam Result
                   </div>
                   <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', marginBottom: '0.75rem' }}>
-                    {score} <span style={{ fontSize: '1.25rem', color: '#64748b' }}>/ {quizQuestions.length}</span>
+                    {score} <span style={{ fontSize: '1.25rem', color: '#64748b' }}>/ {quizQuestions.length} Points</span>
                   </div>
 
                   <div style={{
