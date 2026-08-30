@@ -1280,11 +1280,26 @@ function SuperAdminDashboard() {
                   padding: '2rem',
                   boxSizing: 'border-box'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '1rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-                      Manage Quiz Questions
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: isMobileView ? 'column' : 'row',
+                    justifyContent: 'space-between', 
+                    alignItems: isMobileView ? 'flex-start' : 'center', 
+                    gap: '1rem',
+                    marginBottom: '1.5rem', 
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)', 
+                    paddingBottom: '1rem' 
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: isMobileView ? '1.1rem' : '1.25rem', fontWeight: 700 }}>
+                      Manage Quiz Questions ({questions.length})
                     </h3>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '0.5rem', 
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      width: isMobileView ? '100%' : 'auto'
+                    }}>
                       <button
                         onClick={handleReseedQuestions}
                         style={{
@@ -1292,19 +1307,21 @@ function SuperAdminDashboard() {
                           border: '1px solid rgba(16, 185, 129, 0.3)',
                           borderRadius: '10px',
                           color: '#34d399',
-                          padding: '0.5rem 1rem',
+                          padding: isMobileView ? '0.45rem 0.75rem' : '0.5rem 1rem',
                           fontWeight: 600,
-                          fontSize: '0.85rem',
+                          fontSize: isMobileView ? '0.8rem' : '0.85rem',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.4rem',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          flex: isMobileView ? '1 1 auto' : 'none',
+                          justifyContent: 'center'
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.25)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)'}
                       >
-                        <RefreshCw size={16} />
+                        <RefreshCw size={15} />
                         Load 50 PDF Questions
                       </button>
 
@@ -1315,19 +1332,21 @@ function SuperAdminDashboard() {
                           border: '1px solid rgba(168, 85, 247, 0.3)',
                           borderRadius: '10px',
                           color: '#c084fc',
-                          padding: '0.5rem 1rem',
+                          padding: isMobileView ? '0.45rem 0.75rem' : '0.5rem 1rem',
                           fontWeight: 600,
-                          fontSize: '0.85rem',
+                          fontSize: isMobileView ? '0.8rem' : '0.85rem',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.4rem',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          flex: isMobileView ? '1 1 auto' : 'none',
+                          justifyContent: 'center'
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.25)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)'}
                       >
-                        <Plus size={16} />
+                        <Plus size={15} />
                         Add Question
                       </button>
                     </div>
