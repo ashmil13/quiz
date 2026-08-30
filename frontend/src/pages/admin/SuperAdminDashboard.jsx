@@ -724,7 +724,7 @@ function SuperAdminDashboard() {
                           <th style={{ padding: '1rem' }}>Candidate</th>
                           <th style={{ padding: '1rem' }}>Exam Title</th>
                           <th style={{ padding: '1rem' }}>Status</th>
-                          <th style={{ padding: '1rem' }}>Score</th>
+                          <th style={{ padding: '1rem' }}>Points / Score (1 Pt/Q)</th>
                           <th style={{ padding: '1rem' }}>Suspicion Score</th>
                           <th style={{ padding: '1rem' }}>System Log Timeline</th>
                           <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
@@ -1053,7 +1053,7 @@ function SuperAdminDashboard() {
                           <th style={{ padding: '1rem' }}>Student Name</th>
                           <th style={{ padding: '1rem' }}>Email Address</th>
                           <th style={{ padding: '1rem' }}>Status</th>
-                          <th style={{ padding: '1rem' }}>History</th>
+                          <th style={{ padding: '1rem' }}>Points History (1 Pt/Q)</th>
                           <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
                         </tr>
                       </thead>

@@ -1837,20 +1837,9 @@ function Quiz() {
         {gameState === 'quiz' && (
           <div>
             {/* Upper Info */}
-            <div className="quiz-header" style={{ justifyContent: 'center', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="quiz-header" style={{ justifyContent: 'center' }}>
               <span className="quiz-progress-text">
                 Question {currentIdx + 1} of {quizQuestions.length}
-              </span>
-              <span style={{
-                background: 'rgba(168, 85, 247, 0.15)',
-                border: '1px solid rgba(168, 85, 247, 0.3)',
-                color: '#c084fc',
-                padding: '0.2rem 0.65rem',
-                borderRadius: '12px',
-                fontSize: '0.8rem',
-                fontWeight: 700
-              }}>
-                1 Point
               </span>
             </div>
 
@@ -1943,68 +1932,7 @@ function Quiz() {
                 : 'You have completed the exam. Your response has been submitted successfully.'}
             </p>
 
-            {/* Mark-based evaluation: Excellent, Good, Not Bad */}
-            {examStatus === 'Completed' && (() => {
-              const total = quizQuestions.length || 1;
-              const ratio = score / total;
-              let gradeText = 'Not Bad';
-              let badgeColor = '#f59e0b';
-              let badgeBg = 'rgba(245, 158, 11, 0.15)';
-              let badgeBorder = 'rgba(245, 158, 11, 0.3)';
 
-              if (ratio >= 0.8) {
-                gradeText = 'Excellent';
-                badgeColor = '#10b981';
-                badgeBg = 'rgba(16, 185, 129, 0.15)';
-                badgeBorder = 'rgba(16, 185, 129, 0.3)';
-              } else if (ratio >= 0.5) {
-                gradeText = 'Good';
-                badgeColor = '#3b82f6';
-                badgeBg = 'rgba(59, 130, 246, 0.15)';
-                badgeBorder = 'rgba(59, 130, 246, 0.3)';
-              }
-
-              return (
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '20px',
-                  padding: '1.5rem',
-                  marginTop: '1.5rem',
-                  marginBottom: '1rem',
-                  width: '100%',
-                  maxWidth: '380px',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>
-                    Exam Result
-                  </div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', marginBottom: '0.75rem' }}>
-                    {score} <span style={{ fontSize: '1.25rem', color: '#64748b' }}>/ {quizQuestions.length} Points</span>
-                  </div>
-
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    padding: '0.6rem 1.5rem',
-                    borderRadius: '30px',
-                    background: badgeBg,
-                    border: `1px solid ${badgeBorder}`,
-                    color: badgeColor,
-                    fontWeight: 800,
-                    fontSize: '1.15rem',
-                    letterSpacing: '0.5px'
-                  }}>
-                    {gradeText === 'Excellent' && '🌟 '}
-                    {gradeText === 'Good' && '👍 '}
-                    {gradeText === 'Not Bad' && '👌 '}
-                    {gradeText}
-                  </div>
-                </div>
-              );
-            })()}
 
             <button 
               onClick={() => {
