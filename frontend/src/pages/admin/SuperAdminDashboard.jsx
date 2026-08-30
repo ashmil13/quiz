@@ -206,6 +206,26 @@ function SuperAdminDashboard() {
     setIsEditing(true);
   };
 
+  const handleReseedQuestions = async () => {
+    if (!window.confirm("Do you want to load all 50 standard questions from Surah Yaseen into the database?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      await axios.post('/api/quiz/questions/reseed', {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      alert("Successfully loaded all 50 quiz questions!");
+      setRefreshKey(prev => prev + 1);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load questions.");
+    }
+  };
+
   const handleDeleteQuestion = async (id) => {
     if (!window.confirm("Are you sure you want to delete this question?")) {
       return;
@@ -1264,28 +1284,53 @@ function SuperAdminDashboard() {
                     <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
                       Manage Quiz Questions
                     </h3>
-                    <button
-                      onClick={handleOpenAddQuestion}
-                      style={{
-                        background: 'rgba(168, 85, 247, 0.15)',
-                        border: '1px solid rgba(168, 85, 247, 0.3)',
-                        borderRadius: '10px',
-                        color: '#c084fc',
-                        padding: '0.5rem 1rem',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.25)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)'}
-                    >
-                      <Plus size={16} />
-                      Add Question
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <button
+                        onClick={handleReseedQuestions}
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          borderRadius: '10px',
+                          color: '#34d399',
+                          padding: '0.5rem 1rem',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)'}
+                      >
+                        <RefreshCw size={16} />
+                        Load 50 PDF Questions
+                      </button>
+
+                      <button
+                        onClick={handleOpenAddQuestion}
+                        style={{
+                          background: 'rgba(168, 85, 247, 0.15)',
+                          border: '1px solid rgba(168, 85, 247, 0.3)',
+                          borderRadius: '10px',
+                          color: '#c084fc',
+                          padding: '0.5rem 1rem',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)'}
+                      >
+                        <Plus size={16} />
+                        Add Question
+                      </button>
+                    </div>
                   </div>
 
                   {questions.length === 0 ? (

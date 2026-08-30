@@ -5,6 +5,7 @@ import {
   addQuestion,
   updateQuestion,
   deleteQuestion,
+  reseedQuestions,
   getQuizConfig,
   updateQuizConfig
 } from '../controllers/quizController.js';
@@ -18,6 +19,7 @@ router.post('/generate', generateQuiz);
 // Quiz questions CRUD
 router.get('/questions', getQuestions);
 router.post('/questions', protect, addQuestion);
+router.post('/questions/reseed', protect, reseedQuestions);
 router.put('/questions/:id', protect, updateQuestion);
 router.delete('/questions/:id', protect, deleteQuestion);
 
