@@ -841,8 +841,8 @@ function Quiz() {
     if (gameState !== 'quiz') return;
 
     const now = Date.now();
-    // Limit alerts to once every 4 seconds to prevent double triggers
-    if (now - lastViolationTime.current < 4000) return;
+    // 2 second cooldown limiter to reliably catch eye focus look-aways
+    if (now - lastViolationTime.current < 2000) return;
     lastViolationTime.current = now;
 
     const timeString = formatElapsedTime(elapsedSeconds);
@@ -858,9 +858,9 @@ function Quiz() {
     if (type === 'App Switch') weight = 50;
     if (type === 'Screen Split') weight = 50;
     if (type === 'Focus Loss') weight = 50;
-    if (type === 'No Face') weight = 25;
+    if (type === 'No Face') weight = 35;
     if (type === 'Multiple Faces') weight = 50;
-    if (type === 'Eye Focus') weight = 25;
+    if (type === 'Eye Focus') weight = 35;
 
     setSuspicionScore(prev => Math.min(100, prev + weight));
 
@@ -871,15 +871,15 @@ function Quiz() {
         // 1st VIOLATION: Show warning alert modal popup (Give 1 Chance)!
         setWarningModal({
           show: true,
-          title: `⚠️ Exam Violation Warning (1 / ${maxWarnings})`,
+          title: `⚠️ Eye Focus Violation Warning (1 / ${maxWarnings})`,
           message: `${message} This is your 1st warning. Next violation will automatically terminate your exam!`
         });
       } else {
         // 2nd VIOLATION: Terminate exam immediately!
         setWarningModal({ show: false, title: '', message: '' });
         setTimeout(() => {
-          handleAutoSubmit(`Exam terminated: Exceeded warning limit (${type}: ${message})`, currentLogs);
-        }, 500);
+          handleAutoSubmit(`Exam terminated: Repeated violation after warning (${type}: ${message})`, currentLogs);
+        }, 400);
       }
       return nextWarnings;
     });
@@ -1194,7 +1194,7 @@ function Quiz() {
       if (predictions.length === 0) {
         setFaceStatus("Missing");
         noFaceCount.current += 1;
-        if (noFaceCount.current >= 2) {
+        if (noFaceCount.current >= 1) {
           triggerViolation("No Face", "Maintain facial alignment in camera view.");
           noFaceCount.current = 0;
         }
@@ -1222,10 +1222,13 @@ function Quiz() {
           const mouthToMidY = mouth[1] - eyeMidY;
           const verticalRatio = noseToMidY / (mouthToMidY || 1);
 
-          // Thresholds: horizontalRatio > 0.30, verticalRatio < 0.20 (looking up) or > 0.70 (looking down)
-          if (horizontalRatio > 0.30 || verticalRatio < 0.20 || verticalRatio > 0.70) {
+          // Strict Eye Focus Thresholds:
+          // horizontalRatio > 0.18 (Strict side glance threshold)
+          // verticalRatio < 0.28 (Looking up towards ceiling/notes)
+          // verticalRatio > 0.65 (Looking down towards lap/phone)
+          if (horizontalRatio > 0.18 || verticalRatio < 0.28 || verticalRatio > 0.65) {
             setFaceStatus("Unfocused");
-            triggerViolation("Eye Focus", "Please keep your eyes focused on the exam screen.");
+            triggerViolation("Eye Focus", "Strict Eye Focus Warning: Please keep your eyes focused directly on the exam screen!");
           } else {
             setFaceStatus("Active");
             noFaceCount.current = 0;
@@ -1242,7 +1245,7 @@ function Quiz() {
     }
 
     if (isMonitoringActive.current) {
-      setTimeout(() => detectLoop(model, videoEl), 3000);
+      setTimeout(() => detectLoop(model, videoEl), 1200);
     }
   };
 
