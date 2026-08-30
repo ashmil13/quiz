@@ -965,7 +965,7 @@ function Quiz() {
                   <p style={{ color: '#cbd5e1', fontSize: '0.9rem', margin: 0 }}>
                     {attemptReport?.status === 'Terminated'
                       ? 'Your exam was terminated due to proctoring violations. Your attempt is blocked.'
-                      : 'You have successfully completed the exam. Your attempt is blocked.'}
+                      : 'Your exam is finished, congratulations! Your attempt is blocked.'}
                   </p>
                 </div>
                 
@@ -977,6 +977,24 @@ function Quiz() {
                         <span>Status:</span>
                         <strong style={{ color: attemptReport.status === 'Completed' ? '#10b981' : '#ef4444' }}>{attemptReport.status}</strong>
                       </li>
+                      {attemptReport.status === 'Completed' && typeof attemptReport.score === 'number' && (
+                        <li style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.9rem' }}>
+                          <span>Mark Grade:</span>
+                          <strong style={{
+                            color: (attemptReport.score / (attemptReport.totalQuestions || 1)) >= 0.8 
+                              ? '#10b981' 
+                              : (attemptReport.score / (attemptReport.totalQuestions || 1)) >= 0.5 
+                              ? '#3b82f6' 
+                              : '#f59e0b'
+                          }}>
+                            {(attemptReport.score / (attemptReport.totalQuestions || 1)) >= 0.8 
+                              ? 'Excellent' 
+                              : (attemptReport.score / (attemptReport.totalQuestions || 1)) >= 0.5 
+                              ? 'Good' 
+                              : 'Not Bad'}
+                          </strong>
+                        </li>
+                      )}
                     </ul>
                   </div>
                 )}
@@ -1409,13 +1427,76 @@ function Quiz() {
             <h1 className="welcome-title" style={{
               color: examStatus === 'Terminated' ? '#ef4444' : '#ffffff'
             }}>
-              {examStatus === 'Terminated' ? 'Exam Terminated!' : 'Exam Completed!'}
+              {examStatus === 'Terminated' ? 'Exam Terminated!' : 'Your exam is finished, congratulations!'}
             </h1>
             <p className="welcome-subtitle">
               {examStatus === 'Terminated' 
                 ? 'Your exam was terminated due to violating the rules of the exam.' 
                 : 'You have completed the exam. Your response has been submitted successfully.'}
             </p>
+
+            {/* Mark-based evaluation: Excellent, Good, Not Bad */}
+            {examStatus === 'Completed' && (() => {
+              const total = quizQuestions.length || 1;
+              const ratio = score / total;
+              let gradeText = 'Not Bad';
+              let badgeColor = '#f59e0b';
+              let badgeBg = 'rgba(245, 158, 11, 0.15)';
+              let badgeBorder = 'rgba(245, 158, 11, 0.3)';
+
+              if (ratio >= 0.8) {
+                gradeText = 'Excellent';
+                badgeColor = '#10b981';
+                badgeBg = 'rgba(16, 185, 129, 0.15)';
+                badgeBorder = 'rgba(16, 185, 129, 0.3)';
+              } else if (ratio >= 0.5) {
+                gradeText = 'Good';
+                badgeColor = '#3b82f6';
+                badgeBg = 'rgba(59, 130, 246, 0.15)';
+                badgeBorder = 'rgba(59, 130, 246, 0.3)';
+              }
+
+              return (
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '20px',
+                  padding: '1.5rem',
+                  marginTop: '1.5rem',
+                  marginBottom: '1rem',
+                  width: '100%',
+                  maxWidth: '380px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>
+                    Exam Result
+                  </div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', marginBottom: '0.75rem' }}>
+                    {score} <span style={{ fontSize: '1.25rem', color: '#64748b' }}>/ {quizQuestions.length}</span>
+                  </div>
+
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: '0.6rem 1.5rem',
+                    borderRadius: '30px',
+                    background: badgeBg,
+                    border: `1px solid ${badgeBorder}`,
+                    color: badgeColor,
+                    fontWeight: 800,
+                    fontSize: '1.15rem',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {gradeText === 'Excellent' && '🌟 '}
+                    {gradeText === 'Good' && '👍 '}
+                    {gradeText === 'Not Bad' && '👌 '}
+                    {gradeText}
+                  </div>
+                </div>
+              );
+            })()}
 
             <button 
               onClick={() => {
@@ -1429,7 +1510,7 @@ function Quiz() {
                 boxShadow: examStatus === 'Terminated'
                   ? '0 4px 12px rgba(239, 68, 68, 0.2)'
                   : '0 4px 12px rgba(16, 185, 129, 0.2)',
-                marginTop: '2rem'
+                marginTop: '1rem'
               }}
             >
               {examStatus === 'Terminated' ? (
