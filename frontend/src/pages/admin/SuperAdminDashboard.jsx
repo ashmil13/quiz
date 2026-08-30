@@ -61,11 +61,10 @@ function SuperAdminDashboard() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Security Check: Redirect if not SuperAdmin sumi@gmail.com
+  // Security Check: Redirect if not SuperAdmin
   useEffect(() => {
     const role = auth.role || localStorage.getItem("role");
-    const email = auth.email || localStorage.getItem("email");
-    if (role !== 'SuperAdmin' || email !== 'sumi@gmail.com') {
+    if (role !== 'SuperAdmin') {
       navigate('/user/quiz');
     }
   }, [auth, navigate]);

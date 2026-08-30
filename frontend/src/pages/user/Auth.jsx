@@ -90,7 +90,7 @@ function Auth({ initialMode }) {
             image: data.profileImage
           });
           
-          if (data.role === "SuperAdmin" && data.email === "sumi@gmail.com") {
+          if (data.role === "SuperAdmin") {
             navigate('/admin/dashboard');
           } else {
             navigate('/user/quiz');
