@@ -883,18 +883,10 @@ function Quiz() {
     setWarnings(prev => {
       const nextWarnings = prev + 1;
 
-      if (nextWarnings < maxWarnings) {
-        // 1st VIOLATION: Show warning alert modal popup (Give 1 Chance)!
-        setWarningModal({
-          show: true,
-          title: `⚠️ Eye Focus Violation Warning (1 / ${maxWarnings})`,
-          message: `${message} This is your 1st warning. Next violation will automatically terminate your exam!`
-        });
-      } else {
-        // 2nd VIOLATION: Terminate exam immediately!
-        setWarningModal({ show: false, title: '', message: '' });
+      if (nextWarnings >= maxWarnings) {
+        // Exceeded maximum warnings: Terminate exam automatically
         setTimeout(() => {
-          handleAutoSubmit(`Exam terminated: Repeated violation after warning (${type}: ${message})`, currentLogs);
+          handleAutoSubmit(`Exam terminated: Repeated violation (${type}: ${message})`, currentLogs);
         }, 400);
       }
       return nextWarnings;
@@ -1996,76 +1988,7 @@ function Quiz() {
         )}
       </div>
 
-      {/* 1st Violation Warning Alert Modal */}
-      {warningModal.show && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(15, 23, 42, 0.88)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 99999,
-          padding: '1.5rem',
-          boxSizing: 'border-box'
-        }}>
-          <div style={{
-            background: '#0c1322',
-            border: '2px solid rgba(245, 158, 11, 0.5)',
-            borderRadius: '24px',
-            padding: '2rem 1.75rem',
-            maxWidth: '460px',
-            width: '100%',
-            textAlign: 'center',
-            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.6)'
-          }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: 'rgba(245, 158, 11, 0.15)',
-              border: '2px solid rgba(245, 158, 11, 0.4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1.25rem auto'
-            }}>
-              <AlertTriangle size={36} color="#f59e0b" />
-            </div>
 
-            <h3 style={{ margin: '0 0 0.75rem 0', color: '#fbbf24', fontSize: '1.3rem', fontWeight: 800 }}>
-              {warningModal.title}
-            </h3>
-
-            <p style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 1.5rem 0' }}>
-              {warningModal.message}
-            </p>
-
-            <button
-              onClick={() => setWarningModal({ show: false, title: '', message: '' })}
-              style={{
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '0.8rem 1.75rem',
-                fontWeight: 800,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(245, 158, 11, 0.35)',
-                transition: 'all 0.2s',
-                width: '100%'
-              }}
-            >
-              I Understand & Resume Exam
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
