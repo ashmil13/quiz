@@ -567,6 +567,7 @@ function Quiz() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [selectedKey, setSelectedKey] = useState(null);
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
   const [isLocked, setIsLocked] = useState(false);
 
   // AI Quiz Generator states
@@ -834,7 +835,11 @@ function Quiz() {
     if (selectedKey === null || isLocked) return;
     setIsLocked(true);
     if (selectedKey === quizQuestions[currentIdx].answer) {
-      setScore((prev) => prev + 1);
+      setScore((prev) => {
+        const next = prev + 1;
+        scoreRef.current = next;
+        return next;
+      });
     }
   };
 
@@ -951,9 +956,10 @@ function Quiz() {
     try {
       setUploadStatus('Uploading exam reports & logs to secure database...');
 
+      const finalScore = typeof scoreRef.current === 'number' ? scoreRef.current : score;
       const payload = {
         examName: aiTopic ? `AI Quiz: ${aiTopic}` : 'Standard Islamic Quiz',
-        score,
+        score: finalScore,
         totalQuestions: quizQuestions.length,
         status: finalStatus,
         suspicionScore: finalStatus === 'Terminated' ? 100 : (suspicionScore || 0),

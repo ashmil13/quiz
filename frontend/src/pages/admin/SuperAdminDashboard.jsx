@@ -952,6 +952,7 @@ function SuperAdminDashboard() {
                           <th style={{ padding: '1rem' }}>Candidate</th>
                           <th style={{ padding: '1rem' }}>Exam Title</th>
                           <th style={{ padding: '1rem' }}>Termination Status</th>
+                          <th style={{ padding: '1rem' }}>Points Scored</th>
                           <th style={{ padding: '1rem' }}>Why Terminated?</th>
                           <th style={{ padding: '1rem' }}>Violation Reasons</th>
                           <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
@@ -971,13 +972,13 @@ function SuperAdminDashboard() {
                             const otherViolations = report.events?.filter(e => e.type !== 'Auto Submit' && e.type !== 'Terminated' && e.type !== 'Exam Terminated') || [];
 
                             return (
-                              <tr key={report._id} style={{
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                              <tr key={report._id} style={{ 
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.04)', 
                                 fontSize: '0.9rem'
                               }}>
                                 <td style={{ padding: '1rem', fontWeight: 600, color: '#f8fafc' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    {report.suspicionScore >= 60 && <span title="Suspicious activity flagged" style={{ color: '#ef4444' }}>🚩</span>}
+                                    {(report.status === 'Terminated' || report.suspicionScore >= 60) && <span title="Suspicious activity flagged" style={{ color: '#ef4444' }}>🚩</span>}
                                     <span>{report.studentName}</span>
                                   </div>
                                 </td>
@@ -992,6 +993,10 @@ function SuperAdminDashboard() {
                                       COMPLETED
                                     </span>
                                   )}
+                                </td>
+                                <td style={{ padding: '1rem', color: report.status === 'Terminated' ? '#f87171' : '#ffffff', fontWeight: 600 }}>
+                                  {report.score} / {report.totalQuestions} Points ({Math.round((report.score / (report.totalQuestions || 1)) * 100)}%)
+                                  {report.status === 'Terminated' && <div style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 500 }}>Points Scored Before Termination</div>}
                                 </td>
                                 <td style={{ padding: '1rem', color: report.status === 'Terminated' ? '#f87171' : '#cbd5e1', fontWeight: report.status === 'Terminated' ? 600 : 500 }}>
                                   {terminationReason}
