@@ -623,6 +623,7 @@ function Quiz() {
   const lastViolationTime = useRef(0);
   const noFaceCount = useRef(0);
   const multiFaceCount = useRef(0);
+  const unfocusedCount = useRef(0);
 
   // Draggable Floating Camera State & Event Logic (Touch & Mouse)
   const [camPos, setCamPos] = useState(null);
@@ -855,8 +856,9 @@ function Quiz() {
     if (gameState !== 'quiz') return;
 
     const now = Date.now();
-    // 2 second cooldown limiter to reliably catch eye focus look-aways
-    if (now - lastViolationTime.current < 2000) return;
+    // Cooldown limiter: 5 seconds for Eye Focus to avoid spam, 2 seconds for other events
+    const minCooldown = type === 'Eye Focus' ? 5000 : 2000;
+    if (now - lastViolationTime.current < minCooldown) return;
     lastViolationTime.current = now;
 
     const timeString = formatElapsedTime(elapsedSeconds);
@@ -874,7 +876,7 @@ function Quiz() {
     if (type === 'Focus Loss') weight = 50;
     if (type === 'No Face') weight = 35;
     if (type === 'Multiple Faces') weight = 50;
-    if (type === 'Eye Focus') weight = 35;
+    if (type === 'Eye Focus') weight = 15;
 
     setSuspicionScore(prev => Math.min(100, prev + weight));
 
@@ -1237,14 +1239,22 @@ function Quiz() {
           const mouthToMidY = mouth[1] - eyeMidY;
           const verticalRatio = noseToMidY / (mouthToMidY || 1);
 
-          // Strict Eye Focus Thresholds:
-          // horizontalRatio > 0.18 (Strict side glance threshold)
-          // verticalRatio < 0.28 (Looking up towards ceiling/notes)
-          // verticalRatio > 0.65 (Looking down towards lap/phone)
-          if (horizontalRatio > 0.18 || verticalRatio < 0.28 || verticalRatio > 0.65) {
-            setFaceStatus("Unfocused");
-            triggerViolation("Eye Focus", "Strict Eye Focus Warning: Please keep your eyes focused directly on the exam screen!");
+          // Relaxed Eye Focus Thresholds (Smooth, forgiving & non-intrusive):
+          // horizontalRatio > 0.42 (Requires prolonged sideways glance away from screen)
+          // verticalRatio < 0.15 (Requires prolonged looking far above screen)
+          // verticalRatio > 0.85 (Requires prolonged looking far below screen)
+          const isLookingAway = horizontalRatio > 0.42 || verticalRatio < 0.15 || verticalRatio > 0.85;
+
+          if (isLookingAway) {
+            unfocusedCount.current += 1;
+            // Requires at least 3 consecutive unfocused frames before triggering violation
+            if (unfocusedCount.current >= 3) {
+              setFaceStatus("Unfocused");
+              triggerViolation("Eye Focus", "Eye Focus Warning: Please keep your eyes focused on the exam screen.");
+              unfocusedCount.current = 0;
+            }
           } else {
+            unfocusedCount.current = 0;
             setFaceStatus("Active");
             noFaceCount.current = 0;
             multiFaceCount.current = 0;
