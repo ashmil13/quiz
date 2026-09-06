@@ -697,7 +697,7 @@ function Quiz() {
         stopStream(cameraStream);
         setCameraStream(null);
       }
-      setCameraError('Camera turned OFF. Enabling camera is compulsory before starting the exam.');
+      setCameraError('Camera turned OFF. Enabling camera is compulsory for exam proctoring purposes.');
       return;
     }
 
@@ -719,6 +719,15 @@ function Quiz() {
       setCameraError('Camera permission is disallowed or blocked on your phone/browser.');
     }
   };
+
+  // Guarantee camera stream cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        stopStream(cameraStream);
+      }
+    };
+  }, [cameraStream]);
 
   // Reset/Start Quiz logic
   const handleStartStandardQuiz = () => {
@@ -1614,13 +1623,13 @@ function Quiz() {
                       </div>
                       <div>
                         <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                          Camera Access
-                          <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 800, background: 'rgba(239, 68, 68, 0.15)', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>COMPULSORY</span>
+                          Camera Access (Exam Purposes Only)
+                          <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 800, background: 'rgba(239, 68, 68, 0.15)', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>COMPULSORY FOR EXAM</span>
                         </h4>
                         <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
                           {isCameraEnabled 
-                            ? '✓ Camera is ON and verified. You are ready to start!' 
-                            : 'You must turn ON your camera option before starting the exam.'}
+                            ? '✓ Camera active for exam proctoring. Automatically disconnects when exam completes.' 
+                            : 'Camera permission is requested strictly for exam proctoring & anti-cheat monitoring.'}
                         </p>
                       </div>
                     </div>
