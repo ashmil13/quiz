@@ -611,7 +611,7 @@ const seedSampleReports = async () => {
           status: 'Completed',
           suspicionScore: 35,
           events: [
-            { time: '04:12', type: 'Eye Focus', message: 'Candidate looked away from screen boundary' }
+            { time: '04:12', type: 'Focus Loss', message: 'Candidate switched focus away from exam screen' }
           ]
         },
         {

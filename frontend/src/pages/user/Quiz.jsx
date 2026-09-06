@@ -623,7 +623,6 @@ function Quiz() {
   const lastViolationTime = useRef(0);
   const noFaceCount = useRef(0);
   const multiFaceCount = useRef(0);
-  const unfocusedCount = useRef(0);
 
   // Draggable Floating Camera State & Event Logic (Touch & Mouse)
   const [camPos, setCamPos] = useState(null);
@@ -856,8 +855,8 @@ function Quiz() {
     if (gameState !== 'quiz') return;
 
     const now = Date.now();
-    // Cooldown limiter: 5 seconds for Eye Focus to avoid spam, 2 seconds for other events
-    const minCooldown = type === 'Eye Focus' ? 5000 : 2000;
+    // Cooldown limiter: 2 seconds for proctoring events
+    const minCooldown = 2000;
     if (now - lastViolationTime.current < minCooldown) return;
     lastViolationTime.current = now;
 
@@ -876,7 +875,6 @@ function Quiz() {
     if (type === 'Focus Loss') weight = 50;
     if (type === 'No Face') weight = 35;
     if (type === 'Multiple Faces') weight = 50;
-    if (type === 'Eye Focus') weight = 15;
 
     setSuspicionScore(prev => Math.min(100, prev + weight));
 
@@ -1212,50 +1210,9 @@ function Quiz() {
         triggerViolation("Multiple Faces", "Multiple faces or secondary person detected in webcam view.");
         return;
       } else {
-        const prediction = predictions[0];
-        if (prediction.landmarks && prediction.landmarks.length >= 4) {
-          const rightEye = prediction.landmarks[0];
-          const leftEye = prediction.landmarks[1];
-          const nose = prediction.landmarks[2];
-          const mouth = prediction.landmarks[3];
-
-          // 1. Horizontal Turn (Left/Right look away)
-          const eyeDist = Math.hypot(leftEye[0] - rightEye[0], leftEye[1] - rightEye[1]);
-          const eyeMidX = (leftEye[0] + rightEye[0]) / 2;
-          const noseToMidX = Math.abs(nose[0] - eyeMidX);
-          const horizontalRatio = noseToMidX / (eyeDist || 1);
-
-          // 2. Vertical Turn (Up/Down look away)
-          const eyeMidY = (leftEye[1] + rightEye[1]) / 2;
-          const noseToMidY = nose[1] - eyeMidY;
-          const mouthToMidY = mouth[1] - eyeMidY;
-          const verticalRatio = noseToMidY / (mouthToMidY || 1);
-
-          // Relaxed Eye Focus Thresholds (Smooth, forgiving & non-intrusive):
-          // horizontalRatio > 0.42 (Requires prolonged sideways glance away from screen)
-          // verticalRatio < 0.15 (Requires prolonged looking far above screen)
-          // verticalRatio > 0.85 (Requires prolonged looking far below screen)
-          const isLookingAway = horizontalRatio > 0.42 || verticalRatio < 0.15 || verticalRatio > 0.85;
-
-          if (isLookingAway) {
-            unfocusedCount.current += 1;
-            // Requires at least 3 consecutive unfocused frames before triggering violation
-            if (unfocusedCount.current >= 3) {
-              setFaceStatus("Unfocused");
-              triggerViolation("Eye Focus", "Eye Focus Warning: Please keep your eyes focused on the exam screen.");
-              unfocusedCount.current = 0;
-            }
-          } else {
-            unfocusedCount.current = 0;
-            setFaceStatus("Active");
-            noFaceCount.current = 0;
-            multiFaceCount.current = 0;
-          }
-        } else {
-          setFaceStatus("Active");
-          noFaceCount.current = 0;
-          multiFaceCount.current = 0;
-        }
+        setFaceStatus("Active");
+        noFaceCount.current = 0;
+        multiFaceCount.current = 0;
       }
     } catch (err) {
       console.warn("Face loop warning:", err);
@@ -1453,12 +1410,8 @@ function Quiz() {
             />
             <div className="camera-indicator-bar">
               <div className="indicator-group">
-                <span className={`status-dot ${faceStatus === 'Active' ? 'green' : faceStatus === 'Unfocused' ? 'orange' : 'red'}`}></span>
-                <span className="indicator-label">{faceStatus === 'Active' ? 'Face: OK' : faceStatus === 'Unfocused' ? 'Eye Focus: Away' : `Face: ${faceStatus}`}</span>
-              </div>
-              <div className="indicator-group">
-                <Shield size={11} className={faceStatus === 'Unfocused' ? 'pulsing-shield' : ''} />
-                <span className="indicator-label">Gaze: {faceStatus === 'Unfocused' ? 'Unfocused' : 'Focused'}</span>
+                <span className={`status-dot ${faceStatus === 'Active' ? 'green' : 'red'}`}></span>
+                <span className="indicator-label">{faceStatus === 'Active' ? 'Face: OK' : `Face: ${faceStatus}`}</span>
               </div>
             </div>
           </div>
@@ -1567,9 +1520,9 @@ function Quiz() {
                         <li className="proctor-rule">
                           <Shield size={18} />
                           <div>
-                            <div style={{ color: '#f8fafc', fontWeight: 600 }}>Active proctoring will monitor your camera, eye focus, and browser focus.</div>
+                            <div style={{ color: '#f8fafc', fontWeight: 600 }}>Active proctoring will monitor your camera and browser focus.</div>
                             <div style={{ fontSize: '0.825rem', color: '#a78bfa', marginTop: '0.2rem' }}>
-                              നിങ്ങളുടെ ക്യാമറ, കണ്ണുകളുടെ ശ്രദ്ധ, ബ്രൗസർ ഫോക്കസ് എന്നിവ എഐ പ്രോക്ടറിംഗ് വഴി നിരീക്ഷിക്കുന്നതാണ്.
+                              നിങ്ങളുടെ ക്യാമറ, ബ്രൗസർ ഫോക്കസ് എന്നിവ എഐ പ്രോക്ടറിംഗ് വഴി നിരീക്ഷിക്കുന്നതാണ്.
                             </div>
                           </div>
                         </li>
