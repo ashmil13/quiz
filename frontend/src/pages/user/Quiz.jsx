@@ -1428,28 +1428,77 @@ function Quiz() {
                 <span style={{ color: '#94a3b8' }}>Checking exam attempt...</span>
               </div>
             ) : hasAttempted ? (
-              <div className="attempted-container" style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
-                <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                  <ShieldAlert size={48} color="#ef4444" style={{ margin: '0 auto 1rem auto', display: 'block' }} />
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0 0 0.5rem 0' }}>Attempt Blocked</h3>
-                  <p style={{ color: '#cbd5e1', fontSize: '0.9rem', margin: 0 }}>
-                    {attemptReport?.status === 'Terminated'
-                      ? 'Your exam was terminated due to proctoring violations. Your attempt is blocked.'
-                      : 'Your exam is finished, congratulations! Your attempt is blocked.'}
-                  </p>
-                </div>
-                
-                {attemptReport && (
-                  <div className="rules-card" style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'left' }}>
-                    <h4 style={{ margin: '0 0 1rem 0', color: '#ffffff', fontSize: '1rem', fontWeight: 700 }}>Attempt Record Details:</h4>
-                    <ul className="rules-list" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <li style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.9rem' }}>
-                        <span>Status:</span>
-                        <strong style={{ color: attemptReport.status === 'Completed' ? '#10b981' : '#ef4444' }}>{attemptReport.status}</strong>
-                      </li>
-                    </ul>
+              <div className="attempted-container" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(15, 23, 42, 0.8) 100%)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  borderRadius: '20px',
+                  padding: '2.5rem 1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1.25rem',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)'
+                }}>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <CheckCircle2 size={36} color="#10b981" />
                   </div>
-                )}
+                  
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', margin: 0, lineHeight: '1.4' }}>
+                    Congratulations! Your exam is completed.
+                  </h3>
+
+                  {(() => {
+                    const score = attemptReport?.score ?? 0;
+                    const total = attemptReport?.totalQuestions || 50;
+                    const pct = (score / total) * 100;
+                    let grade = 'Good';
+                    let badgeColor = '#818cf8';
+                    let badgeBg = 'rgba(99, 102, 241, 0.15)';
+                    let badgeBorder = 'rgba(99, 102, 241, 0.3)';
+
+                    if (pct >= 80) {
+                      grade = 'Excellent';
+                      badgeColor = '#10b981';
+                      badgeBg = 'rgba(16, 185, 129, 0.15)';
+                      badgeBorder = 'rgba(16, 185, 129, 0.3)';
+                    } else if (pct >= 50) {
+                      grade = 'Good';
+                      badgeColor = '#818cf8';
+                      badgeBg = 'rgba(99, 102, 241, 0.15)';
+                      badgeBorder = 'rgba(99, 102, 241, 0.3)';
+                    } else {
+                      grade = 'Not Bad';
+                      badgeColor = '#f59e0b';
+                      badgeBg = 'rgba(245, 158, 11, 0.15)';
+                      badgeBorder = 'rgba(245, 158, 11, 0.3)';
+                    }
+
+                    return (
+                      <div style={{
+                        fontSize: '1.15rem',
+                        fontWeight: 700,
+                        color: badgeColor,
+                        background: badgeBg,
+                        border: `1px solid ${badgeBorder}`,
+                        padding: '0.5rem 1.75rem',
+                        borderRadius: '30px',
+                        letterSpacing: '0.03em'
+                      }}>
+                        {grade}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             ) : (
               <>
