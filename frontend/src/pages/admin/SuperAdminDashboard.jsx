@@ -802,8 +802,22 @@ function SuperAdminDashboard() {
                                 )}
                               </td>
                               <td style={{ padding: '1rem', color: isTerminated ? '#f87171' : '#ffffff', fontWeight: 600 }}>
-                                {report.score} / {report.totalQuestions} Points ({Math.round((report.score / report.totalQuestions) * 100)}%)
-                                {isTerminated && <div style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 500 }}>Exam Terminated</div>}
+                                {report.score} / {report.totalQuestions} Points ({Math.round((report.score / (report.totalQuestions || 1)) * 100)}%)
+                                {!isTerminated ? (
+                                  <div style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    color: (report.score / (report.totalQuestions || 1)) >= 0.8 
+                                      ? '#10b981' 
+                                      : (report.score / (report.totalQuestions || 1)) >= 0.5 
+                                      ? '#3b82f6' 
+                                      : '#f59e0b'
+                                  }}>
+                                    Grade: {(report.score / (report.totalQuestions || 1)) >= 0.8 ? 'Excellent' : (report.score / (report.totalQuestions || 1)) >= 0.5 ? 'Good' : 'Not Bad'}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 500 }}>Points Scored Before Termination</div>
+                                )}
                               </td>
                               <td style={{ padding: '1rem' }}>
                                 <span style={{
