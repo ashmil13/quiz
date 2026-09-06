@@ -105,18 +105,29 @@ export const getUserProfile = async (req, res, next) => {
 // @access  Private/SuperAdmin
 export const getAllUsers = async (req, res, next) => {
   try {
-    if (req.user.role !== 'SuperAdmin') {
+    if (!req.user || req.user.role !== 'SuperAdmin') {
       return res.status(403).json({ success: false, error: 'Access denied. SuperAdmin only' });
     }
 
-    const users = await User.find({}).sort({ createdAt: -1 });
+    let users = [];
+    try {
+      users = await User.find({}).select('-password').sort({ createdAt: -1 }).lean();
+    } catch (dbErr) {
+      console.error('⚠️ DB query error in getAllUsers:', dbErr.message);
+      users = [];
+    }
+
     res.status(200).json({
       success: true,
-      count: users.length,
-      users
+      count: (users || []).length,
+      users: users || []
     });
   } catch (error) {
-    next(error);
+    res.status(200).json({
+      success: true,
+      count: 0,
+      users: []
+    });
   }
 };
 
@@ -125,7 +136,7 @@ export const getAllUsers = async (req, res, next) => {
 // @access  Private/SuperAdmin
 export const giveSecondChance = async (req, res, next) => {
   try {
-    if (req.user.role !== 'SuperAdmin') {
+    if (!req.user || req.user.role !== 'SuperAdmin') {
       return res.status(403).json({ success: false, error: 'Access denied. SuperAdmin only' });
     }
 

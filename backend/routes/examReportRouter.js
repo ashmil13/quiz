@@ -4,7 +4,8 @@ import {
   getAllReports,
   getReportDetail,
   checkUserAttempt,
-  deleteReport
+  deleteReport,
+  seedSampleReportsEndpoint
 } from '../controllers/examReportController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -13,6 +14,7 @@ const router = express.Router();
 // Routes for Exam Proctor Reports
 router.post('/upload', protect, uploadExamReport);
 router.get('/all', protect, getAllReports);
+router.post('/seed', protect, seedSampleReportsEndpoint);
 router.get('/check-attempt', protect, checkUserAttempt);
 router.get('/:id', protect, getReportDetail);
 router.delete('/:id', protect, deleteReport);

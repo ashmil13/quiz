@@ -1492,24 +1492,6 @@ function Quiz() {
                         <span>Status:</span>
                         <strong style={{ color: attemptReport.status === 'Completed' ? '#10b981' : '#ef4444' }}>{attemptReport.status}</strong>
                       </li>
-                      {attemptReport.status === 'Completed' && typeof attemptReport.score === 'number' && (
-                        <li style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.9rem' }}>
-                          <span>Mark Grade:</span>
-                          <strong style={{
-                            color: (attemptReport.score / (attemptReport.totalQuestions || 1)) >= 0.8 
-                              ? '#10b981' 
-                              : (attemptReport.score / (attemptReport.totalQuestions || 1)) >= 0.5 
-                              ? '#3b82f6' 
-                              : '#f59e0b'
-                          }}>
-                            {(attemptReport.score / (attemptReport.totalQuestions || 1)) >= 0.8 
-                              ? 'Excellent' 
-                              : (attemptReport.score / (attemptReport.totalQuestions || 1)) >= 0.5 
-                              ? 'Good' 
-                              : 'Not Bad'}
-                          </strong>
-                        </li>
-                      )}
                     </ul>
                   </div>
                 )}
@@ -1950,7 +1932,7 @@ function Quiz() {
                 : 'You have answered all 50 questions. Your response has been submitted successfully.'}
             </p>
 
-            {/* Score & Performance Rating Display */}
+            {/* Submission Confirmation Box (Hide final score from candidate) */}
             {examStatus !== 'Terminated' && (
               <div style={{
                 background: 'rgba(255, 255, 255, 0.03)',
@@ -1962,39 +1944,12 @@ function Quiz() {
                 boxSizing: 'border-box',
                 textAlign: 'center'
               }}>
-                <div style={{ color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
-                  Final Exam Score
+                <div style={{ color: '#10b981', fontSize: '1.1rem', fontWeight: 700 }}>
+                  ✓ Thank you! Your answers have been recorded.
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#ffffff', margin: '0.5rem 0' }}>
-                  {score} / {quizQuestions.length} <span style={{ fontSize: '1rem', color: '#94a3b8' }}>Points</span> ({Math.round((score / (quizQuestions.length || 1)) * 100)}%)
-                </div>
-                <div style={{
-                  fontSize: '1rem',
-                  fontWeight: 800,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.45rem 1.25rem',
-                  borderRadius: '12px',
-                  background: (score / (quizQuestions.length || 1)) >= 0.8 
-                    ? 'rgba(16, 185, 129, 0.15)' 
-                    : (score / (quizQuestions.length || 1)) >= 0.5 
-                    ? 'rgba(59, 130, 246, 0.15)' 
-                    : 'rgba(245, 158, 11, 0.15)',
-                  border: (score / (quizQuestions.length || 1)) >= 0.8 
-                    ? '1px solid rgba(16, 185, 129, 0.3)' 
-                    : (score / (quizQuestions.length || 1)) >= 0.5 
-                    ? '1px solid rgba(59, 130, 246, 0.3)' 
-                    : '1px solid rgba(245, 158, 11, 0.3)',
-                  color: (score / (quizQuestions.length || 1)) >= 0.8 
-                    ? '#10b981' 
-                    : (score / (quizQuestions.length || 1)) >= 0.5 
-                    ? '#3b82f6' 
-                    : '#f59e0b'
-                }}>
-                  <Award size={18} />
-                  Rating: {(score / (quizQuestions.length || 1)) >= 0.8 ? 'Excellent' : (score / (quizQuestions.length || 1)) >= 0.5 ? 'Good' : 'Not Bad'}
-                </div>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem', marginBottom: 0 }}>
+                  Final results and scores will be reviewed and published by the SuperAdmin.
+                </p>
               </div>
             )}
 

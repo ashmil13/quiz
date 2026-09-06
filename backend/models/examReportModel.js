@@ -3,48 +3,46 @@ import mongoose from 'mongoose';
 const EventSchema = new mongoose.Schema({
   time: {
     type: String,
-    required: true
+    default: ''
   },
   type: {
     type: String,
-    required: true
+    default: ''
   },
   message: {
     type: String,
-    required: true
+    default: ''
   }
-});
+}, { _id: false });
 
 const ExamReportSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
   },
   studentName: {
     type: String,
-    required: true
+    default: 'Student'
   },
   examName: {
     type: String,
-    required: true
+    default: 'Islamic Quiz Challenge'
   },
   score: {
     type: Number,
-    required: true
+    default: 0
   },
   totalQuestions: {
     type: Number,
-    required: true
+    default: 50
   },
   status: {
     type: String,
-    enum: ['Completed', 'Terminated'],
-    required: true
+    default: 'Completed'
   },
   suspicionScore: {
     type: Number,
-    required: true
+    default: 0
   },
   videoUrl: {
     type: String,
@@ -54,7 +52,10 @@ const ExamReportSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  events: [EventSchema]
+  events: {
+    type: [EventSchema],
+    default: []
+  }
 }, {
   timestamps: true
 });

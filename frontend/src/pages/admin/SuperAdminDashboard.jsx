@@ -15,7 +15,15 @@ import {
   X,
   Award,
   AlertTriangle,
-  Menu
+  Menu,
+  Search,
+  Video,
+  Download,
+  Eye,
+  CheckCircle,
+  Clock,
+  User,
+  Sparkles
 } from 'lucide-react';
 import axios from '../../axios';
 import { useNavigate } from 'react-router-dom';
@@ -25,7 +33,7 @@ function SuperAdminDashboard() {
   const { auth, setAuth } = useAuth();
   const navigate = useNavigate();
 
-  // Tab State: 'overview' | 'reports' | 'users' | 'settings'
+  // Tab State: 'overview' | 'reports' | 'users' | 'violations' | 'settings'
   const [activeTab, setActiveTab] = useState('overview');
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -41,6 +49,11 @@ function SuperAdminDashboard() {
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [violationsFilter, setViolationsFilter] = useState('completed'); // 'completed' | 'terminated' | 'violations'
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Selected Report Modal (Details + Video Player)
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Question Editor state
   const [editingQuestion, setEditingQuestion] = useState(null);
@@ -69,7 +82,7 @@ function SuperAdminDashboard() {
     }
   }, [auth, navigate]);
 
-  // Fetch all backend data
+  // Fetch all backend data safely
   const fetchData = async () => {
     setLoading(true);
     setError('');
@@ -82,30 +95,46 @@ function SuperAdminDashboard() {
       };
 
       // Fetch reports
-      const reportsRes = await axios.get('/api/exam-report/all', authHeader);
-      if (reportsRes.data && reportsRes.data.reports) {
-        setReports(reportsRes.data.reports);
+      try {
+        const reportsRes = await axios.get('/api/exam-report/all', authHeader);
+        if (reportsRes.data && reportsRes.data.reports) {
+          setReports(reportsRes.data.reports);
+        }
+      } catch (rErr) {
+        console.error("Error loading reports:", rErr.response?.data || rErr.message);
       }
 
       // Fetch users
-      const usersRes = await axios.get('/api/users', authHeader);
-      if (usersRes.data && usersRes.data.users) {
-        setUsers(usersRes.data.users);
+      try {
+        const usersRes = await axios.get('/api/users', authHeader);
+        if (usersRes.data && usersRes.data.users) {
+          setUsers(usersRes.data.users);
+        }
+      } catch (uErr) {
+        console.error("Error loading users:", uErr.response?.data || uErr.message);
       }
 
       // Fetch config
-      const configRes = await axios.get('/api/quiz/config');
-      if (configRes.data && configRes.data.config) {
-        setConfig(configRes.data.config);
+      try {
+        const configRes = await axios.get('/api/quiz/config');
+        if (configRes.data && configRes.data.config) {
+          setConfig(configRes.data.config);
+        }
+      } catch (cErr) {
+        console.error("Error loading config:", cErr.response?.data || cErr.message);
       }
 
       // Fetch questions
-      const questionsRes = await axios.get('/api/quiz/questions');
-      if (questionsRes.data && questionsRes.data.questions) {
-        setQuestions(questionsRes.data.questions);
+      try {
+        const questionsRes = await axios.get('/api/quiz/questions');
+        if (questionsRes.data && questionsRes.data.questions) {
+          setQuestions(questionsRes.data.questions);
+        }
+      } catch (qErr) {
+        console.error("Error loading questions:", qErr.response?.data || qErr.message);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Dashboard fetch error:", err);
       setError('Failed to fetch dashboard data. Please try again.');
     } finally {
       setLoading(false);
@@ -116,6 +145,27 @@ function SuperAdminDashboard() {
     fetchData();
   }, [refreshKey]);
 
+  // Open Full Report Detail Modal (fetches video & full report if needed)
+  const handleViewReportDetail = async (report) => {
+    setSelectedReport(report);
+    setLoadingDetail(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await axios.get(`/api/exam-report/${report._id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.data && res.data.report) {
+        setSelectedReport(res.data.report);
+      }
+    } catch (err) {
+      console.error("Error fetching report detail:", err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("role");
@@ -125,6 +175,66 @@ function SuperAdminDashboard() {
     localStorage.removeItem("email");
     setAuth({});
     navigate('/login');
+  };
+
+  // Seed sample exam attempts for testing/demo
+  const handleSeedSampleReports = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await axios.post('/api/exam-report/seed', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data && res.data.reports) {
+        setReports(res.data.reports);
+        setRefreshKey(prev => prev + 1);
+        alert("Successfully loaded sample candidate exam attempt records!");
+      }
+    } catch (err) {
+      console.error("Failed to seed sample reports:", err);
+      alert("Failed to load sample exam data.");
+    }
+  };
+
+  // Export CSV Handler
+  const handleExportCSV = () => {
+    if (!reports.length) {
+      alert('No exam reports available to export.');
+      return;
+    }
+    const headers = ['Student Name', 'Exam Title', 'Score', 'Total Questions', 'Percentage', 'Status', 'Suspicion Score', 'Attempt Date'];
+    const rows = reports.map(r => [
+      `"${r.studentName || ''}"`,
+      `"${r.examName || ''}"`,
+      r.score || 0,
+      r.totalQuestions || 0,
+      `${Math.round(((r.score || 0) / (r.totalQuestions || 1)) * 100)}%`,
+      `"${r.status || ''}"`,
+      `${r.suspicionScore || 0}%`,
+      `"${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Exam_Reports_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Video Source Helper
+  const getVideoSrc = (report) => {
+    if (!report) return '';
+    if (report.videoBase64) return report.videoBase64;
+    if (report.videoUrl) {
+      if (report.videoUrl.startsWith('http')) return report.videoUrl;
+      const baseUrl = import.meta.env.VITE_API_BASE_URL ||
+        (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? 'http://localhost:5000'
+          : 'https://quiz-hq96.vercel.app');
+      return `${baseUrl}${report.videoUrl}`;
+    }
+    return '';
   };
 
   // Delete Exam Report
@@ -140,6 +250,9 @@ function SuperAdminDashboard() {
           Authorization: `Bearer ${token}`
         }
       });
+      if (selectedReport && selectedReport._id === reportId) {
+        setSelectedReport(null);
+      }
       setRefreshKey(prev => prev + 1);
     } catch (err) {
       console.error(err);
@@ -274,10 +387,28 @@ function SuperAdminDashboard() {
     }
   };
 
+  // Filtered dataset
+  const filteredReports = reports.filter(r => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const student = (r.studentName || '').toLowerCase();
+    const exam = (r.examName || '').toLowerCase();
+    return student.includes(q) || exam.includes(q);
+  });
+
+  const filteredUsers = users.filter(u => {
+    if (u.role !== 'User') return false;
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const name = (u.name || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
+
   // Calculations for Overview Screen
   const totalAttempts = reports.length;
   const averageScore = totalAttempts > 0
-    ? Math.round((reports.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / totalAttempts) * 100)
+    ? Math.round((reports.reduce((acc, curr) => acc + ((curr.score || 0) / (curr.totalQuestions || 1)), 0) / totalAttempts) * 100)
     : 0;
   const terminatedCount = reports.filter(r => r.status === 'Terminated').length;
   const flaggedReports = reports.filter(r => r.status === 'Terminated' || (r.suspicionScore && r.suspicionScore >= 60)).length;
@@ -390,7 +521,7 @@ function SuperAdminDashboard() {
               }}
             >
               <FileText size={18} />
-              Exam Reports
+              Exam Reports ({reports.length})
             </button>
 
             <button
@@ -412,7 +543,7 @@ function SuperAdminDashboard() {
               }}
             >
               <UserCheck size={18} />
-              User Retakes
+              User Retakes ({totalStudents})
             </button>
 
             <button
@@ -434,7 +565,7 @@ function SuperAdminDashboard() {
               }}
             >
               <AlertTriangle size={18} />
-              Violations Log
+              Violations Log ({flaggedReports})
             </button>
 
             <button
@@ -529,25 +660,46 @@ function SuperAdminDashboard() {
               </span>
             </div>
 
-            <button
-              onClick={() => setRefreshKey(prev => prev + 1)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.4rem 0.8rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                background: 'rgba(255, 255, 255, 0.02)',
-                color: '#f8fafc',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                outline: 'none'
-              }}
-            >
-              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-              Sync
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={handleExportCSV}
+                title="Export Data CSV"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  padding: '0.4rem 0.6rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(168, 85, 247, 0.3)',
+                  background: 'rgba(168, 85, 247, 0.1)',
+                  color: '#c084fc',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <Download size={13} />
+                Export
+              </button>
+              <button
+                onClick={() => setRefreshKey(prev => prev + 1)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  color: '#f8fafc',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                Sync
+              </button>
+            </div>
           </div>
         )}
 
@@ -571,44 +723,165 @@ function SuperAdminDashboard() {
               {activeTab === 'settings' && 'Quiz & Proctor Configurations'}
             </h2>
             <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, lineHeight: 1.4 }}>
-              {activeTab === 'overview' && 'Proctoring metrics and exam summary statistics.'}
-              {activeTab === 'reports' && 'Detailed log of student violations and report cards.'}
-              {activeTab === 'users' && 'Manage student exam attempts and issue second-chance retakes.'}
-              {activeTab === 'violations' && 'Detailed audit of why exams were terminated and specific violation reasons.'}
-              {activeTab === 'settings' && 'Fully customize Malayalam quiz questions and anti-cheat constraints.'}
+              {activeTab === 'overview' && 'Proctoring metrics, video logs, and exam summary statistics.'}
+              {activeTab === 'reports' && 'Detailed log of candidate violation events, score cards, and recorded proctoring videos.'}
+              {activeTab === 'users' && 'Manage student accounts and grant second-chance retake permissions.'}
+              {activeTab === 'violations' && 'Audit why candidate exams were terminated or flagged for suspicion.'}
+              {activeTab === 'settings' && 'Customize Malayalam quiz questions and anti-cheat proctoring rules.'}
             </p>
           </div>
 
           {!isMobileView && (
-            <button
-              onClick={() => setRefreshKey(prev => prev + 1)}
-              style={{
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {/* Search Bar Input */}
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '10px',
+                background: 'rgba(15, 23, 42, 0.6)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                background: 'rgba(255, 255, 255, 0.02)',
-                color: '#f8fafc',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              Sync Data
-            </button>
+                borderRadius: '10px',
+                padding: '0.5rem 0.85rem'
+              }}>
+                <Search size={16} color="#94a3b8" />
+                <input
+                  type="text"
+                  placeholder="Search student or exam..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: '#ffffff',
+                    fontSize: '0.85rem',
+                    width: '180px'
+                  }}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* Load Demo Data Button */}
+              <button
+                onClick={handleSeedSampleReports}
+                title="Populate demo candidate exam attempt records"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  color: '#10b981',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.22)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)'}
+              >
+                <Sparkles size={14} />
+                Load Sample Data
+              </button>
+
+              {/* Export CSV Button */}
+              <button
+                onClick={handleExportCSV}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(168, 85, 247, 0.3)',
+                  background: 'rgba(168, 85, 247, 0.1)',
+                  color: '#c084fc',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.1)'}
+              >
+                <Download size={14} />
+                Export CSV
+              </button>
+
+              {/* Sync Button */}
+              <button
+                onClick={() => setRefreshKey(prev => prev + 1)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  color: '#f8fafc',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}
+              >
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                Sync Data
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Mobile Search Bar */}
+        {isMobileView && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'rgba(15, 23, 42, 0.6)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '10px',
+            padding: '0.6rem 0.85rem',
+            marginBottom: '1.5rem'
+          }}>
+            <Search size={16} color="#94a3b8" />
+            <input
+              type="text"
+              placeholder="Search candidate name or exam..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: '#ffffff',
+                fontSize: '0.85rem',
+                width: '100%'
+              }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6rem 0', gap: '1rem' }}>
             <RefreshCw className="animate-spin" size={32} color="#c084fc" />
-            <span style={{ color: '#94a3b8' }}>Syncing data feeds...</span>
+            <span style={{ color: '#94a3b8' }}>Syncing dashboard data feeds...</span>
           </div>
         ) : error ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.5rem', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: '16px', color: '#f87171' }}>
@@ -623,8 +896,8 @@ function SuperAdminDashboard() {
                 {/* Metric Cards Grid */}
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                  gap: '1.5rem',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '1.25rem',
                   marginBottom: '2.5rem'
                 }}>
                   <div style={{
@@ -681,6 +954,17 @@ function SuperAdminDashboard() {
                     <span style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Total Candidates</span>
                     <h3 style={{ fontSize: '2.25rem', fontWeight: 800, margin: '0.5rem 0 0 0', color: '#38bdf8' }}>{totalStudents}</h3>
                   </div>
+
+                  <div style={{
+                    background: 'rgba(30, 41, 59, 0.25)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderRadius: '20px',
+                    padding: '1.5rem',
+                    boxSizing: 'border-box'
+                  }}>
+                    <span style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Quiz Questions</span>
+                    <h3 style={{ fontSize: '2.25rem', fontWeight: 800, margin: '0.5rem 0 0 0', color: '#a7f3d0' }}>{questions.length}</h3>
+                  </div>
                 </div>
 
                 {/* Quick Info Box */}
@@ -692,17 +976,102 @@ function SuperAdminDashboard() {
                   display: 'flex',
                   flexDirection: isMobileView ? 'column' : 'row',
                   alignItems: isMobileView ? 'flex-start' : 'center',
-                  gap: '1.25rem'
+                  gap: '1.25rem',
+                  marginBottom: '2rem'
                 }}>
                   <Award size={isMobileView ? 36 : 48} color="#c084fc" />
                   <div>
                     <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', fontWeight: 700 }}>Proctoring Engine Status</h4>
                     <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                      Standardized anti-cheat mechanisms are currently {config.isProctorEnabled ? 'active' : 'disabled'}. 
-                      The system allows up to <strong>{config.maxWarnings} warnings</strong> before automatic submission is triggered. 
-                      Candidates are given exactly <strong>{config.examDuration} seconds</strong> per question.
+                      Standardized anti-cheat mechanisms are currently <strong>{config.isProctorEnabled ? 'ACTIVE' : 'DISABLED'}</strong>. 
+                      The system permits up to <strong>{config.maxWarnings} violation warnings</strong> before auto-terminating the exam. 
+                      Candidates have exactly <strong>{config.examDuration} seconds</strong> per question.
                     </p>
                   </div>
+                </div>
+
+                {/* Recent Candidates Activity Table */}
+                <div style={{
+                  background: 'rgba(30, 41, 59, 0.15)',
+                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                  borderRadius: '24px',
+                  padding: '1.5rem',
+                  boxSizing: 'border-box'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Recent Candidate Attempts</h3>
+                    <button
+                      onClick={() => handleTabChange('reports')}
+                      style={{ background: 'transparent', border: 'none', color: '#c084fc', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                      View All Reports →
+                    </button>
+                  </div>
+
+                  {filteredReports.length === 0 ? (
+                    <p style={{ color: '#64748b', margin: 0, padding: '2rem', textAlign: 'center' }}>No exam reports found.</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                            <th style={{ padding: '0.75rem' }}>Candidate</th>
+                            <th style={{ padding: '0.75rem' }}>Status</th>
+                            <th style={{ padding: '0.75rem' }}>Score</th>
+                            <th style={{ padding: '0.75rem' }}>Suspicion Score</th>
+                            <th style={{ padding: '0.75rem', textAlign: 'center' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredReports.slice(0, 5).map((report) => (
+                            <tr key={report._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', fontSize: '0.85rem' }}>
+                              <td style={{ padding: '0.75rem', fontWeight: 600, color: '#f8fafc' }}>
+                                {report.studentName}
+                              </td>
+                              <td style={{ padding: '0.75rem' }}>
+                                {report.status === 'Terminated' ? (
+                                  <span style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '0.15rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>
+                                    TERMINATED
+                                  </span>
+                                ) : (
+                                  <span style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '0.15rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>
+                                    COMPLETED
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '0.75rem', fontWeight: 600, color: '#ffffff' }}>
+                                {report.score} / {report.totalQuestions} ({Math.round(((report.score || 0) / (report.totalQuestions || 1)) * 100)}%)
+                              </td>
+                              <td style={{ padding: '0.75rem' }}>
+                                <span style={{ color: (report.suspicionScore || 0) >= 60 ? '#f87171' : '#10b981', fontWeight: 700 }}>
+                                  {report.suspicionScore || 0}%
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                <button
+                                  onClick={() => handleViewReportDetail(report)}
+                                  style={{
+                                    background: 'rgba(168, 85, 247, 0.1)',
+                                    border: '1px solid rgba(168, 85, 247, 0.25)',
+                                    borderRadius: '8px',
+                                    color: '#c084fc',
+                                    padding: '0.35rem 0.65rem',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.3rem'
+                                  }}
+                                >
+                                  <Eye size={12} /> View Report
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -710,7 +1079,7 @@ function SuperAdminDashboard() {
             {/* EXAM REPORTS TAB */}
             {activeTab === 'reports' && (
               <div>
-                {reports.length === 0 ? (
+                {filteredReports.length === 0 ? (
                   <div style={{
                     background: 'rgba(30, 41, 59, 0.15)',
                     border: '1px solid rgba(255, 255, 255, 0.04)',
@@ -719,7 +1088,27 @@ function SuperAdminDashboard() {
                     textAlign: 'center'
                   }}>
                     <FileText size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                    <p style={{ color: '#64748b', margin: 0 }}>No exam report logs found.</p>
+                    <p style={{ color: '#64748b', margin: '0 0 1.5rem 0', fontSize: '1rem' }}>No candidate exam reports found.</p>
+                    <button
+                      onClick={handleSeedSampleReports}
+                      style={{
+                        background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: '#ffffff',
+                        padding: '0.85rem 1.75rem',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 15px rgba(168, 85, 247, 0.35)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <Sparkles size={18} />
+                      Load Sample Candidate Exam Data
+                    </button>
                   </div>
                 ) : (
                   <div style={{
@@ -743,10 +1132,11 @@ function SuperAdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {reports.map((report) => {
+                        {filteredReports.map((report) => {
                           const isTerminated = report.status === 'Terminated';
                           const effectiveSuspicion = isTerminated ? 100 : (report.suspicionScore || 0);
                           const isSuspicious = isTerminated || effectiveSuspicion >= 60;
+                          const hasVideo = Boolean(report.videoUrl || report.videoBase64);
 
                           return (
                             <tr key={report._id} style={{ 
@@ -802,7 +1192,7 @@ function SuperAdminDashboard() {
                                 )}
                               </td>
                               <td style={{ padding: '1rem', color: isTerminated ? '#f87171' : '#ffffff', fontWeight: 600 }}>
-                                {report.score} / {report.totalQuestions} Points ({Math.round((report.score / (report.totalQuestions || 1)) * 100)}%)
+                                {report.score} / {report.totalQuestions} Points ({Math.round(((report.score || 0) / (report.totalQuestions || 1)) * 100)}%)
                                 {!isTerminated ? (
                                   <div style={{
                                     fontSize: '0.75rem',
@@ -841,34 +1231,52 @@ function SuperAdminDashboard() {
                                 )}
                               </td>
                               <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                <button
-                                  onClick={() => handleDeleteReport(report._id, report.studentName)}
-                                  style={{
-                                    background: 'rgba(239, 68, 68, 0.08)',
-                                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                                    borderRadius: '8px',
-                                    color: '#f87171',
-                                    padding: '0.4rem 0.8rem',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-                                    e.currentTarget.style.color = '#ef4444';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
-                                    e.currentTarget.style.color = '#f87171';
-                                  }}
-                                >
-                                  <Trash2 size={12} style={{ marginRight: '0.25rem' }} />
-                                  Delete
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                                  <button
+                                    onClick={() => handleViewReportDetail(report)}
+                                    title="View Full Report Details & Video"
+                                    style={{
+                                      background: 'rgba(168, 85, 247, 0.1)',
+                                      border: '1px solid rgba(168, 85, 247, 0.25)',
+                                      borderRadius: '8px',
+                                      color: '#c084fc',
+                                      padding: '0.4rem 0.6rem',
+                                      cursor: 'pointer',
+                                      fontSize: '0.8rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.3rem',
+                                      outline: 'none'
+                                    }}
+                                  >
+                                    {hasVideo ? <Video size={12} /> : <Eye size={12} />}
+                                    {hasVideo ? 'Video' : 'View'}
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeleteReport(report._id, report.studentName)}
+                                    title="Delete Report"
+                                    style={{
+                                      background: 'rgba(239, 68, 68, 0.08)',
+                                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                                      borderRadius: '8px',
+                                      color: '#f87171',
+                                      padding: '0.4rem 0.6rem',
+                                      cursor: 'pointer',
+                                      fontSize: '0.8rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.3rem',
+                                      outline: 'none'
+                                    }}
+                                  >
+                                    <Trash2 size={12} />
+                                    Delete
+                                  </button>
+                                </div>
                               </td>
                             </tr>
-                          )
+                          );
                         })}
                       </tbody>
                     </table>
@@ -897,7 +1305,7 @@ function SuperAdminDashboard() {
                       outline: 'none'
                     }}
                   >
-                    Completed Users ({reports.filter(r => r.status === 'Completed').length})
+                    Completed Users ({filteredReports.filter(r => r.status === 'Completed').length})
                   </button>
                   <button
                     onClick={() => setViolationsFilter('terminated')}
@@ -914,7 +1322,7 @@ function SuperAdminDashboard() {
                       outline: 'none'
                     }}
                   >
-                    Terminated Users ({reports.filter(r => r.status === 'Terminated').length})
+                    Terminated Users ({filteredReports.filter(r => r.status === 'Terminated').length})
                   </button>
                   <button
                     onClick={() => setViolationsFilter('violations')}
@@ -931,11 +1339,11 @@ function SuperAdminDashboard() {
                       outline: 'none'
                     }}
                   >
-                    Violations ({reports.filter(r => r.status === 'Completed' && r.events && r.events.some(e => e.type !== 'Auto Submit' && e.type !== 'Terminated' && e.type !== 'Exam Terminated')).length})
+                    Violations ({filteredReports.filter(r => r.status === 'Completed' && r.events && r.events.some(e => e.type !== 'Auto Submit' && e.type !== 'Terminated' && e.type !== 'Exam Terminated')).length})
                   </button>
                 </div>
 
-                {reports.filter(r => {
+                {filteredReports.filter(r => {
                   if (violationsFilter === 'completed') return r.status === 'Completed';
                   if (violationsFilter === 'terminated') return r.status === 'Terminated';
                   if (violationsFilter === 'violations') return r.status === 'Completed' && r.events && r.events.some(e => e.type !== 'Auto Submit' && e.type !== 'Terminated' && e.type !== 'Exam Terminated');
@@ -973,7 +1381,7 @@ function SuperAdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {reports
+                        {filteredReports
                           .filter(r => {
                             if (violationsFilter === 'completed') return r.status === 'Completed';
                             if (violationsFilter === 'terminated') return r.status === 'Terminated';
@@ -1009,7 +1417,7 @@ function SuperAdminDashboard() {
                                   )}
                                 </td>
                                 <td style={{ padding: '1rem', color: report.status === 'Terminated' ? '#f87171' : '#ffffff', fontWeight: 600 }}>
-                                  {report.score} / {report.totalQuestions} Points ({Math.round((report.score / (report.totalQuestions || 1)) * 100)}%)
+                                  {report.score} / {report.totalQuestions} Points ({Math.round(((report.score || 0) / (report.totalQuestions || 1)) * 100)}%)
                                   {report.status === 'Terminated' && <div style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 500 }}>Points Scored Before Termination</div>}
                                 </td>
                                 <td style={{ padding: '1rem', color: report.status === 'Terminated' ? '#f87171' : '#cbd5e1', fontWeight: report.status === 'Terminated' ? 600 : 500 }}>
@@ -1037,31 +1445,47 @@ function SuperAdminDashboard() {
                                   )}
                                 </td>
                                 <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                  <button
-                                    onClick={() => handleDeleteReport(report._id, report.studentName)}
-                                    style={{
-                                      background: 'rgba(239, 68, 68, 0.08)',
-                                      border: '1px solid rgba(239, 68, 68, 0.2)',
-                                      borderRadius: '8px',
-                                      color: '#f87171',
-                                      padding: '0.4rem 0.8rem',
-                                      cursor: 'pointer',
-                                      fontSize: '0.8rem',
-                                      transition: 'all 0.2s',
-                                      outline: 'none'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-                                      e.currentTarget.style.color = '#ef4444';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
-                                      e.currentTarget.style.color = '#f87171';
-                                    }}
-                                  >
-                                    <Trash2 size={12} style={{ marginRight: '0.25rem' }} />
-                                    Delete
-                                  </button>
+                                  <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                                    <button
+                                      onClick={() => handleViewReportDetail(report)}
+                                      title="View Report & Video"
+                                      style={{
+                                        background: 'rgba(168, 85, 247, 0.1)',
+                                        border: '1px solid rgba(168, 85, 247, 0.25)',
+                                        borderRadius: '8px',
+                                        color: '#c084fc',
+                                        padding: '0.4rem 0.6rem',
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.3rem',
+                                        outline: 'none'
+                                      }}
+                                    >
+                                      <Eye size={12} /> View
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleDeleteReport(report._id, report.studentName)}
+                                      style={{
+                                        background: 'rgba(239, 68, 68, 0.08)',
+                                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                                        borderRadius: '8px',
+                                        color: '#f87171',
+                                        padding: '0.4rem 0.6rem',
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.3rem',
+                                        outline: 'none'
+                                      }}
+                                    >
+                                      <Trash2 size={12} />
+                                      Delete
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -1076,7 +1500,7 @@ function SuperAdminDashboard() {
             {/* USER RETAKES TAB */}
             {activeTab === 'users' && (
               <div>
-                {users.filter(u => u.role === 'User' && (u.retakeAllowed || reports.some(r => r.user === u._id || r.studentName === u.name))).length === 0 ? (
+                {filteredUsers.length === 0 ? (
                   <div style={{
                     background: 'rgba(30, 41, 59, 0.15)',
                     border: '1px solid rgba(255, 255, 255, 0.04)',
@@ -1085,7 +1509,7 @@ function SuperAdminDashboard() {
                     textAlign: 'center'
                   }}>
                     <UserCheck size={48} style={{ opacity: 0.3, marginBottom: '1rem', color: '#64748b' }} />
-                    <p style={{ color: '#64748b', margin: 0 }}>No active candidates found for retake management.</p>
+                    <p style={{ color: '#64748b', margin: 0 }}>No candidate accounts found matching your query.</p>
                   </div>
                 ) : (
                   <div style={{
@@ -1101,13 +1525,14 @@ function SuperAdminDashboard() {
                         <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase' }}>
                           <th style={{ padding: '1rem' }}>Student Name</th>
                           <th style={{ padding: '1rem' }}>Email Address</th>
+                          <th style={{ padding: '1rem' }}>Joined Date</th>
                           <th style={{ padding: '1rem' }}>Status</th>
-                          <th style={{ padding: '1rem' }}>Points History (1 Pt/Q)</th>
+                          <th style={{ padding: '1rem' }}>Points History</th>
                           <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {users.filter(u => u.role === 'User' && (u.retakeAllowed || reports.some(r => r.user === u._id || r.studentName === u.name))).map((user) => {
+                        {filteredUsers.map((user) => {
                           const userReport = reports.find(r => r.user === user._id || r.studentName === user.name);
                           const isUserSuspicious = userReport && userReport.suspicionScore >= 60;
                           return (
@@ -1139,6 +1564,9 @@ function SuperAdminDashboard() {
                                 </div>
                               </td>
                               <td style={{ padding: '1rem', color: '#94a3b8' }}>{user.email}</td>
+                              <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8rem' }}>
+                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                              </td>
                               <td style={{ padding: '1rem' }}>
                                 {user.retakeAllowed ? (
                                   <span style={{ background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.3)', color: '#c084fc', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
@@ -1156,15 +1584,15 @@ function SuperAdminDashboard() {
                                   )
                                 ) : (
                                   <span style={{ background: 'rgba(100, 116, 139, 0.12)', border: '1px solid rgba(100, 116, 139, 0.3)', color: '#94a3b8', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
-                                    Pending
+                                    Pending Attempt
                                   </span>
                                 )}
                               </td>
                               <td style={{ padding: '1rem', color: '#cbd5e1' }}>
                                 {userReport ? (
-                                  <span>Score: {userReport.score}/{userReport.totalQuestions} Points ({Math.round((userReport.score / userReport.totalQuestions) * 100)}%)</span>
+                                  <span>Score: {userReport.score}/{userReport.totalQuestions} Points ({Math.round(((userReport.score || 0) / (userReport.totalQuestions || 1)) * 100)}%)</span>
                                 ) : (
-                                  <span style={{ color: '#64748b' }}>N/A</span>
+                                  <span style={{ color: '#64748b' }}>No attempts yet</span>
                                 )}
                               </td>
                               <td style={{ padding: '1rem', textAlign: 'center' }}>
@@ -1342,32 +1770,57 @@ function SuperAdminDashboard() {
                     <h3 style={{ margin: 0, fontSize: isMobileView ? '1.1rem' : '1.25rem', fontWeight: 700 }}>
                       Manage Quiz Questions ({questions.length})
                     </h3>
-                    <button
-                      onClick={handleOpenAddQuestion}
-                      style={{
-                        background: 'rgba(168, 85, 247, 0.15)',
-                        border: '1px solid rgba(168, 85, 247, 0.3)',
-                        borderRadius: '10px',
-                        color: '#c084fc',
-                        padding: isMobileView ? '0.45rem 0.75rem' : '0.5rem 1rem',
-                        fontWeight: 600,
-                        fontSize: isMobileView ? '0.8rem' : '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.25)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)'}
-                    >
-                      <Plus size={15} />
-                      Add Question
-                    </button>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={handleReseedQuestions}
+                        title="Reset database and load default 50 questions"
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          borderRadius: '10px',
+                          color: '#10b981',
+                          padding: isMobileView ? '0.45rem 0.75rem' : '0.5rem 1rem',
+                          fontWeight: 600,
+                          fontSize: isMobileView ? '0.8rem' : '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <RefreshCw size={14} />
+                        Reseed 50 Standard Questions
+                      </button>
+
+                      <button
+                        onClick={handleOpenAddQuestion}
+                        style={{
+                          background: 'rgba(168, 85, 247, 0.15)',
+                          border: '1px solid rgba(168, 85, 247, 0.3)',
+                          borderRadius: '10px',
+                          color: '#c084fc',
+                          padding: isMobileView ? '0.45rem 0.75rem' : '0.5rem 1rem',
+                          fontWeight: 600,
+                          fontSize: isMobileView ? '0.8rem' : '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)'}
+                      >
+                        <Plus size={15} />
+                        Add Question
+                      </button>
+                    </div>
                   </div>
 
                   {questions.length === 0 ? (
-                    <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>No custom questions found. Run database seed to retrieve standard questions.</p>
+                    <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>No custom questions found. Click "Reseed 50 Standard Questions" above to populate database.</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                       {questions.map((q, idx) => (
@@ -1444,6 +1897,178 @@ function SuperAdminDashboard() {
         )}
       </div>
 
+      {/* Selected Exam Report Breakdown & Video Modal */}
+      {selectedReport && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 10000,
+          padding: '1rem',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{
+            background: '#0d1322',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '24px',
+            width: '100%',
+            maxWidth: '750px',
+            padding: '2rem',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+            boxSizing: 'border-box',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '1rem' }}>
+              <div>
+                <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.3rem', fontWeight: 800 }}>
+                  Exam Attempt Audit Report
+                </h3>
+                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                  Candidate: <strong style={{ color: '#f8fafc' }}>{selectedReport.studentName}</strong>
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedReport(null)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', outline: 'none' }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Candidate Summary Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '12px', padding: '1rem' }}>
+                <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>Score</span>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981', marginTop: '0.25rem' }}>
+                  {selectedReport.score} / {selectedReport.totalQuestions} ({Math.round(((selectedReport.score || 0) / (selectedReport.totalQuestions || 1)) * 100)}%)
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '12px', padding: '1rem' }}>
+                <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>Submission Status</span>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: selectedReport.status === 'Terminated' ? '#f87171' : '#10b981', marginTop: '0.25rem' }}>
+                  {selectedReport.status === 'Terminated' ? 'TERMINATED' : 'COMPLETED'}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '12px', padding: '1rem' }}>
+                <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>Suspicion Score</span>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: (selectedReport.suspicionScore || 0) >= 60 ? '#f87171' : '#10b981', marginTop: '0.25rem' }}>
+                  {selectedReport.suspicionScore || 0}%
+                </div>
+              </div>
+            </div>
+
+            {/* Video Player */}
+            {loadingDetail ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', gap: '0.5rem', color: '#94a3b8' }}>
+                <RefreshCw className="animate-spin" size={20} color="#c084fc" />
+                Loading proctoring video stream...
+              </div>
+            ) : getVideoSrc(selectedReport) ? (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Video size={16} color="#c084fc" />
+                  Recorded Proctoring Stream
+                </h4>
+                <div style={{
+                  background: '#000000',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  display: 'flex',
+                  justifyContent: 'center'
+                }}>
+                  <video
+                    src={getVideoSrc(selectedReport)}
+                    controls
+                    autoPlay={false}
+                    style={{ width: '100%', maxHeight: '360px', borderRadius: '16px' }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px dashed rgba(255, 255, 255, 0.08)',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                textAlign: 'center',
+                color: '#64748b',
+                fontSize: '0.85rem',
+                marginBottom: '1.5rem'
+              }}>
+                <Video size={24} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
+                <p style={{ margin: 0 }}>No video recording attached to this exam attempt.</p>
+              </div>
+            )}
+
+            {/* Proctoring Log Events Timeline */}
+            <div>
+              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Clock size={16} color="#c084fc" />
+                Audit Event Timeline
+              </h4>
+              {selectedReport.events && selectedReport.events.length > 0 ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  maxHeight: '180px',
+                  overflowY: 'auto',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  borderRadius: '12px',
+                  padding: '1rem'
+                }}>
+                  {selectedReport.events.map((evt, idx) => (
+                    <div key={idx} style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                      <span style={{ color: '#a855f7', fontWeight: 700, minWidth: '70px' }}>[{evt.time}]</span>
+                      <div>
+                        <strong style={{ color: evt.type === 'Auto Submit' || evt.type === 'Terminated' ? '#f87171' : '#fbbf24' }}>
+                          {evt.type}:
+                        </strong>{' '}
+                        <span>{evt.message}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: '#10b981', fontSize: '0.85rem', margin: 0 }}>No violation anomalies were recorded. Candidate passed all proctoring checks.</p>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button
+                onClick={() => setSelectedReport(null)}
+                style={{
+                  background: '#a855f7',
+                  border: 'none',
+                  color: '#ffffff',
+                  padding: '0.6rem 1.4rem',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.9rem'
+                }}
+              >
+                Close Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Question Editor Modal */}
       {isEditing && editingQuestion && (
         <div style={{
@@ -1457,7 +2082,7 @@ function SuperAdminDashboard() {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          zIndex: 1000,
+          zIndex: 10000,
           padding: '1rem',
           boxSizing: 'border-box'
         }}>

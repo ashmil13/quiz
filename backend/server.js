@@ -10,6 +10,7 @@ import quizRouter from './routes/quizRouter.js';
 import examReportRouter from './routes/examReportRouter.js';
 import Question from './models/questionModel.js';
 import QuizConfig from './models/quizConfigModel.js';
+import ExamReport from './models/examReportModel.js';
 
 // Setup paths for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -575,12 +576,82 @@ const seedQuizData = async () => {
   }
 };
 
+// Seed sample exam attempts for SuperAdmin dashboard demo
+const seedSampleReports = async () => {
+  try {
+    const reportCount = await ExamReport.countDocuments();
+    if (reportCount === 0) {
+      let sampleUser = await User.findOne({ role: 'User' });
+      if (!sampleUser) {
+        sampleUser = await User.create({
+          name: 'Muhammed Niyas',
+          email: 'student@gmail.com',
+          password: 'studentpassword',
+          role: 'User'
+        });
+      }
+
+      await ExamReport.create([
+        {
+          user: sampleUser._id,
+          studentName: 'Muhammed Niyas',
+          examName: 'Islamic Quiz Challenge',
+          score: 48,
+          totalQuestions: 50,
+          status: 'Completed',
+          suspicionScore: 0,
+          events: []
+        },
+        {
+          user: sampleUser._id,
+          studentName: 'Aisha Fathima',
+          examName: 'Islamic Quiz Challenge',
+          score: 42,
+          totalQuestions: 50,
+          status: 'Completed',
+          suspicionScore: 35,
+          events: [
+            { time: '04:12', type: 'Eye Focus', message: 'Candidate looked away from screen boundary' }
+          ]
+        },
+        {
+          user: sampleUser._id,
+          studentName: 'Anas Ibrahim',
+          examName: 'Islamic Quiz Challenge',
+          score: 28,
+          totalQuestions: 50,
+          status: 'Terminated',
+          suspicionScore: 100,
+          events: [
+            { time: '02:45', type: 'Focus Loss', message: 'Tab Switch: Candidate left exam browser window' },
+            { time: '02:47', type: 'Exam Terminated', message: 'Exceeded warning limit of 2' }
+          ]
+        },
+        {
+          user: sampleUser._id,
+          studentName: 'Salman Faris',
+          examName: 'Islamic Quiz Challenge',
+          score: 39,
+          totalQuestions: 50,
+          status: 'Completed',
+          suspicionScore: 0,
+          events: []
+        }
+      ]);
+      console.log('✅ Sample candidate exam reports seeded successfully.');
+    }
+  } catch (err) {
+    console.error('❌ Error seeding sample exam reports:', err.message);
+  }
+};
+
 // Connect to MongoDB Database
 connectDB()
   .then((connected) => {
     if (connected) {
       seedSuperAdmin();
       seedQuizData();
+      seedSampleReports();
     }
   })
   .catch((err) => {
@@ -626,6 +697,7 @@ const ensureDbConnected = async (req, res, next) => {
           await connectDB();
           await seedSuperAdmin();
           await seedQuizData();
+          await seedSampleReports();
         })();
       }
       await dbInitPromise;
