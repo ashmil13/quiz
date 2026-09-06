@@ -956,7 +956,7 @@ function Quiz() {
         score,
         totalQuestions: quizQuestions.length,
         status: finalStatus,
-        suspicionScore,
+        suspicionScore: finalStatus === 'Terminated' ? 100 : (suspicionScore || 0),
         events: currentLogs,
         videoBase64
       };

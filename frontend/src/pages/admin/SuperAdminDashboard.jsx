@@ -279,7 +279,8 @@ function SuperAdminDashboard() {
   const averageScore = totalAttempts > 0
     ? Math.round((reports.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / totalAttempts) * 100)
     : 0;
-  const flaggedReports = reports.filter(r => r.suspicionScore >= 60).length;
+  const terminatedCount = reports.filter(r => r.status === 'Terminated').length;
+  const flaggedReports = reports.filter(r => r.status === 'Terminated' || (r.suspicionScore && r.suspicionScore >= 60)).length;
   const totalStudents = users.filter(u => u.role === 'User').length;
 
   return (
@@ -660,6 +661,17 @@ function SuperAdminDashboard() {
                   </div>
 
                   <div style={{
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '20px',
+                    padding: '1.5rem',
+                    boxSizing: 'border-box'
+                  }}>
+                    <span style={{ color: '#f87171', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Terminated Users</span>
+                    <h3 style={{ fontSize: '2.25rem', fontWeight: 800, margin: '0.5rem 0 0 0', color: '#f87171' }}>{terminatedCount}</h3>
+                  </div>
+
+                  <div style={{
                     background: 'rgba(30, 41, 59, 0.25)',
                     border: '1px solid rgba(255, 255, 255, 0.05)',
                     borderRadius: '20px',
@@ -686,8 +698,8 @@ function SuperAdminDashboard() {
                   <div>
                     <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', fontWeight: 700 }}>Proctoring Engine Status</h4>
                     <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                      Standardized anti-cheat mechanisms are currently {config.isProctorEnabled ? 'active' : 'disabled'}.
-                      The system allows up to <strong>{config.maxWarnings} warnings</strong> before automatic submission is triggered.
+                      Standardized anti-cheat mechanisms are currently {config.isProctorEnabled ? 'active' : 'disabled'}. 
+                      The system allows up to <strong>{config.maxWarnings} warnings</strong> before automatic submission is triggered. 
                       Candidates are given exactly <strong>{config.examDuration} seconds</strong> per question.
                     </p>
                   </div>
@@ -732,21 +744,37 @@ function SuperAdminDashboard() {
                       </thead>
                       <tbody>
                         {reports.map((report) => {
-                          const isSuspicious = report.suspicionScore >= 60;
+                          const isTerminated = report.status === 'Terminated';
+                          const effectiveSuspicion = isTerminated ? 100 : (report.suspicionScore || 0);
+                          const isSuspicious = isTerminated || effectiveSuspicion >= 60;
+
                           return (
-                            <tr key={report._id} style={{
-                              borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                            <tr key={report._id} style={{ 
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.04)', 
                               fontSize: '0.9rem'
                             }}>
                               <td style={{ padding: '1rem', fontWeight: 600 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                  {isSuspicious && <span title="Suspicious activity flagged" style={{ color: '#ef4444' }}>🚩</span>}
+                                  {isSuspicious && <span title="Terminated / Suspicious activity flagged" style={{ color: '#ef4444' }}>🚩</span>}
                                   <span style={{
-                                    color: (!report.events || report.events.length === 0) && (report.suspicionScore === 0) ? '#10b981' : '#f8fafc'
+                                    color: isTerminated ? '#f87171' : (!report.events || report.events.length === 0) && (effectiveSuspicion === 0) ? '#10b981' : '#f8fafc'
                                   }}>
                                     {report.studentName}
                                   </span>
-                                  {(!report.events || report.events.length === 0) && (report.suspicionScore === 0) && (
+                                  {isTerminated && (
+                                    <span style={{
+                                      background: 'rgba(239, 68, 68, 0.12)',
+                                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                                      color: '#f87171',
+                                      padding: '0.15rem 0.4rem',
+                                      borderRadius: '12px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 600
+                                    }}>
+                                      Terminated User
+                                    </span>
+                                  )}
+                                  {(!isTerminated) && (!report.events || report.events.length === 0) && (effectiveSuspicion === 0) && (
                                     <span style={{
                                       background: 'rgba(16, 185, 129, 0.12)',
                                       border: '1px solid rgba(16, 185, 129, 0.3)',
@@ -763,7 +791,7 @@ function SuperAdminDashboard() {
                               </td>
                               <td style={{ padding: '1rem', color: '#94a3b8' }}>{report.examName}</td>
                               <td style={{ padding: '1rem' }}>
-                                {report.status === 'Terminated' ? (
+                                {isTerminated ? (
                                   <span style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
                                     TERMINATED
                                   </span>
@@ -773,15 +801,16 @@ function SuperAdminDashboard() {
                                   </span>
                                 )}
                               </td>
-                              <td style={{ padding: '1rem', color: '#ffffff', fontWeight: 600 }}>
+                              <td style={{ padding: '1rem', color: isTerminated ? '#f87171' : '#ffffff', fontWeight: 600 }}>
                                 {report.score} / {report.totalQuestions} Points ({Math.round((report.score / report.totalQuestions) * 100)}%)
+                                {isTerminated && <div style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 500 }}>Exam Terminated</div>}
                               </td>
                               <td style={{ padding: '1rem' }}>
                                 <span style={{
-                                  color: (report.suspicionScore || 0) > 0 ? '#f97316' : '#10b981',
+                                  color: effectiveSuspicion >= 60 ? '#f87171' : effectiveSuspicion > 0 ? '#f97316' : '#10b981',
                                   fontWeight: 700
                                 }}>
-                                  {report.suspicionScore !== undefined && report.suspicionScore !== null ? report.suspicionScore : 0}%
+                                  {effectiveSuspicion}%
                                 </span>
                               </td>
                               <td style={{ padding: '1rem', maxWidth: '350px' }}>
