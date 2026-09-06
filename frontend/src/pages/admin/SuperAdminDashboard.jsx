@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Shield, 
-  AlertCircle, 
-  RefreshCw, 
-  Trash2, 
-  Edit2, 
-  LogOut, 
-  LayoutDashboard, 
-  FileText, 
-  UserCheck, 
-  Settings, 
-  Plus, 
-  Save, 
+import {
+  Shield,
+  AlertCircle,
+  RefreshCw,
+  Trash2,
+  Edit2,
+  LogOut,
+  LayoutDashboard,
+  FileText,
+  UserCheck,
+  Settings,
+  Plus,
+  Save,
   X,
   Award,
   AlertTriangle,
@@ -36,7 +36,7 @@ function SuperAdminDashboard() {
   const [users, setUsers] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [config, setConfig] = useState({ isProctorEnabled: true, maxWarnings: 2, examDuration: 30 });
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -276,8 +276,8 @@ function SuperAdminDashboard() {
 
   // Calculations for Overview Screen
   const totalAttempts = reports.length;
-  const averageScore = totalAttempts > 0 
-    ? Math.round((reports.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / totalAttempts) * 100) 
+  const averageScore = totalAttempts > 0
+    ? Math.round((reports.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / totalAttempts) * 100)
     : 0;
   const flaggedReports = reports.filter(r => r.suspicionScore >= 60).length;
   const totalStudents = users.filter(u => u.role === 'User').length;
@@ -294,7 +294,7 @@ function SuperAdminDashboard() {
     }}>
       {/* Mobile Drawer Backdrop */}
       {isMobileView && showMobileSidebar && (
-        <div 
+        <div
           onClick={() => setShowMobileSidebar(false)}
           style={{
             position: 'fixed',
@@ -337,7 +337,7 @@ function SuperAdminDashboard() {
               </span>
             </div>
             {isMobileView && (
-              <button 
+              <button
                 onClick={() => setShowMobileSidebar(false)}
                 style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
               >
@@ -509,7 +509,7 @@ function SuperAdminDashboard() {
             margin: '-1.5rem -1rem 1.5rem -1rem'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <button 
+              <button
                 onClick={() => setShowMobileSidebar(true)}
                 style={{
                   background: 'transparent',
@@ -527,7 +527,7 @@ function SuperAdminDashboard() {
                 PROCTOR<span style={{ color: '#c084fc' }}>ADMIN</span>
               </span>
             </div>
-            
+
             <button
               onClick={() => setRefreshKey(prev => prev + 1)}
               style={{
@@ -686,8 +686,8 @@ function SuperAdminDashboard() {
                   <div>
                     <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', fontWeight: 700 }}>Proctoring Engine Status</h4>
                     <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                      Standardized anti-cheat mechanisms are currently {config.isProctorEnabled ? 'active' : 'disabled'}. 
-                      The system allows up to <strong>{config.maxWarnings} warnings</strong> before automatic submission is triggered. 
+                      Standardized anti-cheat mechanisms are currently {config.isProctorEnabled ? 'active' : 'disabled'}.
+                      The system allows up to <strong>{config.maxWarnings} warnings</strong> before automatic submission is triggered.
                       Candidates are given exactly <strong>{config.examDuration} seconds</strong> per question.
                     </p>
                   </div>
@@ -734,8 +734,8 @@ function SuperAdminDashboard() {
                         {reports.map((report) => {
                           const isSuspicious = report.suspicionScore >= 60;
                           return (
-                            <tr key={report._id} style={{ 
-                              borderBottom: '1px solid rgba(255, 255, 255, 0.04)', 
+                            <tr key={report._id} style={{
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                               fontSize: '0.9rem'
                             }}>
                               <td style={{ padding: '1rem', fontWeight: 600 }}>
@@ -761,71 +761,72 @@ function SuperAdminDashboard() {
                                   )}
                                 </div>
                               </td>
-                            <td style={{ padding: '1rem', color: '#94a3b8' }}>{report.examName}</td>
-                            <td style={{ padding: '1rem' }}>
-                              {report.status === 'Terminated' ? (
-                                <span style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
-                                  TERMINATED
+                              <td style={{ padding: '1rem', color: '#94a3b8' }}>{report.examName}</td>
+                              <td style={{ padding: '1rem' }}>
+                                {report.status === 'Terminated' ? (
+                                  <span style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                    TERMINATED
+                                  </span>
+                                ) : (
+                                  <span style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                    COMPLETED
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '1rem', color: '#ffffff', fontWeight: 600 }}>
+                                {report.score} / {report.totalQuestions} Points ({Math.round((report.score / report.totalQuestions) * 100)}%)
+                              </td>
+                              <td style={{ padding: '1rem' }}>
+                                <span style={{
+                                  color: (report.suspicionScore || 0) > 0 ? '#f97316' : '#10b981',
+                                  fontWeight: 700
+                                }}>
+                                  {report.suspicionScore !== undefined && report.suspicionScore !== null ? report.suspicionScore : 0}%
                                 </span>
-                              ) : (
-                                <span style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
-                                  COMPLETED
-                                </span>
-                              )}
-                            </td>
-                            <td style={{ padding: '1rem', color: '#ffffff', fontWeight: 600 }}>
-                              {report.score} / {report.totalQuestions} Points ({Math.round((report.score / report.totalQuestions) * 100)}%)
-                            </td>
-                            <td style={{ padding: '1rem' }}>
-                              <span style={{
-                                color: (report.suspicionScore || 0) > 0 ? '#f97316' : '#10b981',
-                                fontWeight: 700
-                              }}>
-                                {report.suspicionScore !== undefined && report.suspicionScore !== null ? report.suspicionScore : 0}%
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem', maxWidth: '350px' }}>
-                              {report.events && report.events.length > 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: '120px', overflowY: 'auto' }}>
-                                  {report.events.map((evt, idx) => (
-                                    <span key={idx} style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                      <strong style={{ color: '#cbd5e1' }}>[{evt.time}]</strong> {evt.type}: {evt.message}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span style={{ color: '#10b981', fontSize: '0.75rem' }}>No anomalies flagged (Passed proctoring)</span>
-                              )}
-                            </td>
-                            <td style={{ padding: '1rem', textAlign: 'center' }}>
-                              <button
-                                onClick={() => handleDeleteReport(report._id, report.studentName)}
-                                style={{
-                                  background: 'rgba(239, 68, 68, 0.08)',
-                                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                                  borderRadius: '8px',
-                                  color: '#f87171',
-                                  padding: '0.4rem 0.8rem',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem',
-                                  transition: 'all 0.2s',
-                                  outline: 'none'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-                                  e.currentTarget.style.color = '#ef4444';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
-                                  e.currentTarget.style.color = '#f87171';
-                                }}
-                              >
-                                <Trash2 size={12} style={{ marginRight: '0.25rem' }} />
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        )})}
+                              </td>
+                              <td style={{ padding: '1rem', maxWidth: '350px' }}>
+                                {report.events && report.events.length > 0 ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: '120px', overflowY: 'auto' }}>
+                                    {report.events.map((evt, idx) => (
+                                      <span key={idx} style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                        <strong style={{ color: '#cbd5e1' }}>[{evt.time}]</strong> {evt.type}: {evt.message}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span style={{ color: '#10b981', fontSize: '0.75rem' }}>No anomalies flagged (Passed proctoring)</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                <button
+                                  onClick={() => handleDeleteReport(report._id, report.studentName)}
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.08)',
+                                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                                    borderRadius: '8px',
+                                    color: '#f87171',
+                                    padding: '0.4rem 0.8rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    transition: 'all 0.2s',
+                                    outline: 'none'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                                    e.currentTarget.style.color = '#ef4444';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                                    e.currentTarget.style.color = '#f87171';
+                                  }}
+                                >
+                                  <Trash2 size={12} style={{ marginRight: '0.25rem' }} />
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -941,8 +942,8 @@ function SuperAdminDashboard() {
                             const otherViolations = report.events?.filter(e => e.type !== 'Auto Submit' && e.type !== 'Terminated' && e.type !== 'Exam Terminated') || [];
 
                             return (
-                              <tr key={report._id} style={{ 
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.04)', 
+                              <tr key={report._id} style={{
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                                 fontSize: '0.9rem'
                               }}>
                                 <td style={{ padding: '1rem', fontWeight: 600, color: '#f8fafc' }}>
@@ -976,13 +977,13 @@ function SuperAdminDashboard() {
                                       ))}
                                     </div>
                                   ) : (
-                                    <span style={{ 
-                                      color: report.status === 'Terminated' ? '#f87171' : '#10b981', 
+                                    <span style={{
+                                      color: report.status === 'Terminated' ? '#f87171' : '#10b981',
                                       fontSize: '0.75rem',
                                       fontWeight: 600
                                     }}>
-                                      {report.status === 'Terminated' 
-                                        ? 'Terminated on first infraction (No warnings given)' 
+                                      {report.status === 'Terminated'
+                                        ? 'Terminated on first infraction (No warnings given)'
                                         : 'Clean Record (No Warnings)'}
                                     </span>
                                   )}
@@ -1062,8 +1063,8 @@ function SuperAdminDashboard() {
                           const userReport = reports.find(r => r.user === user._id || r.studentName === user.name);
                           const isUserSuspicious = userReport && userReport.suspicionScore >= 60;
                           return (
-                            <tr key={user._id} style={{ 
-                              borderBottom: '1px solid rgba(255, 255, 255, 0.04)', 
+                            <tr key={user._id} style={{
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                               fontSize: '0.9rem'
                             }}>
                               <td style={{ padding: '1rem', fontWeight: 600 }}>
@@ -1111,13 +1112,13 @@ function SuperAdminDashboard() {
                                   </span>
                                 )}
                               </td>
-                               <td style={{ padding: '1rem', color: '#cbd5e1' }}>
-                                 {userReport ? (
-                                   <span>Score: {userReport.score}/{userReport.totalQuestions} Points ({Math.round((userReport.score / userReport.totalQuestions) * 100)}%)</span>
-                                 ) : (
-                                   <span style={{ color: '#64748b' }}>N/A</span>
-                                 )}
-                               </td>
+                              <td style={{ padding: '1rem', color: '#cbd5e1' }}>
+                                {userReport ? (
+                                  <span>Score: {userReport.score}/{userReport.totalQuestions} Points ({Math.round((userReport.score / userReport.totalQuestions) * 100)}%)</span>
+                                ) : (
+                                  <span style={{ color: '#64748b' }}>N/A</span>
+                                )}
+                              </td>
                               <td style={{ padding: '1rem', textAlign: 'center' }}>
                                 {userReport && !user.retakeAllowed ? (
                                   <button
@@ -1181,7 +1182,7 @@ function SuperAdminDashboard() {
                       <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>
                         AI Proctoring Mode
                       </label>
-                      <select 
+                      <select
                         value={config.isProctorEnabled ? 'true' : 'false'}
                         onChange={(e) => setConfig({ ...config, isProctorEnabled: e.target.value === 'true' })}
                         style={{
@@ -1204,7 +1205,7 @@ function SuperAdminDashboard() {
                       <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>
                         Allowed Violation Warnings
                       </label>
-                      <input 
+                      <input
                         type="number"
                         min="1"
                         max="10"
@@ -1228,7 +1229,7 @@ function SuperAdminDashboard() {
                       <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>
                         Exam Timer (Seconds per Question)
                       </label>
-                      <input 
+                      <input
                         type="number"
                         min="10"
                         max="300"
@@ -1280,15 +1281,15 @@ function SuperAdminDashboard() {
                   padding: '2rem',
                   boxSizing: 'border-box'
                 }}>
-                  <div style={{ 
-                    display: 'flex', 
+                  <div style={{
+                    display: 'flex',
                     flexDirection: isMobileView ? 'column' : 'row',
-                    justifyContent: 'space-between', 
-                    alignItems: isMobileView ? 'flex-start' : 'center', 
+                    justifyContent: 'space-between',
+                    alignItems: isMobileView ? 'flex-start' : 'center',
                     gap: '1rem',
-                    marginBottom: '1.5rem', 
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)', 
-                    paddingBottom: '1rem' 
+                    marginBottom: '1.5rem',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                    paddingBottom: '1rem'
                   }}>
                     <h3 style={{ margin: 0, fontSize: isMobileView ? '1.1rem' : '1.25rem', fontWeight: 700 }}>
                       Manage Quiz Questions ({questions.length})
@@ -1331,7 +1332,7 @@ function SuperAdminDashboard() {
                         }}>
                           {/* Actions */}
                           <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', display: 'flex', gap: '0.5rem' }}>
-                            <button 
+                            <button
                               onClick={() => handleOpenEditQuestion(q)}
                               style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', transition: 'color 0.2s' }}
                               onMouseEnter={(e) => e.currentTarget.style.color = '#c084fc'}
@@ -1339,7 +1340,7 @@ function SuperAdminDashboard() {
                             >
                               <Edit2 size={16} />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDeleteQuestion(q._id)}
                               style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', transition: 'color 0.2s' }}
                               onMouseEnter={(e) => e.currentTarget.style.color = '#f87171'}
@@ -1429,7 +1430,7 @@ function SuperAdminDashboard() {
               <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
                 {editingQuestion._id ? 'Edit Quiz Question' : 'Add New Question'}
               </h3>
-              <button 
+              <button
                 type="button"
                 onClick={() => { setIsEditing(false); setEditingQuestion(null); }}
                 style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', outline: 'none' }}
@@ -1443,7 +1444,7 @@ function SuperAdminDashboard() {
               <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>
                 Question (Malayalam)
               </label>
-              <textarea 
+              <textarea
                 required
                 rows="3"
                 value={editingQuestion.question}
@@ -1469,7 +1470,7 @@ function SuperAdminDashboard() {
                   <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.25rem', fontWeight: 600 }}>
                     Option {opt.key}
                   </label>
-                  <input 
+                  <input
                     type="text"
                     required
                     value={opt.text}
@@ -1498,7 +1499,7 @@ function SuperAdminDashboard() {
               <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600 }}>
                 Correct Answer Option
               </label>
-              <select 
+              <select
                 value={editingQuestion.answer}
                 onChange={(e) => setEditingQuestion({ ...editingQuestion, answer: e.target.value })}
                 style={{
@@ -1521,8 +1522,8 @@ function SuperAdminDashboard() {
 
             {/* Buttons */}
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => { setIsEditing(false); setEditingQuestion(null); }}
                 style={{
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -1537,8 +1538,8 @@ function SuperAdminDashboard() {
               >
                 Cancel
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 style={{
                   background: '#a855f7',
                   border: 'none',
