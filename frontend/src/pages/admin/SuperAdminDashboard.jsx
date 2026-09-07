@@ -1581,7 +1581,16 @@ function SuperAdminDashboard() {
                       </thead>
                       <tbody>
                         {filteredUsers.map((user) => {
-                          const userReport = reports.find(r => r.user === user._id || r.studentName === user.name);
+                          const userReport = reports.find(r => {
+                            const rUserId = (r.user && typeof r.user === 'object') ? r.user._id?.toString() : r.user?.toString();
+                            const uId = user._id?.toString();
+                            const rUserEmail = (r.user && typeof r.user === 'object') ? r.user.email : null;
+                            
+                            if (rUserId && uId && rUserId === uId) return true;
+                            if (rUserEmail && user.email && rUserEmail.toLowerCase() === user.email.toLowerCase()) return true;
+                            if (r.studentName && user.name && r.studentName.trim().toLowerCase() === user.name.trim().toLowerCase()) return true;
+                            return false;
+                          });
                           const isUserSuspicious = userReport && userReport.suspicionScore >= 60;
                           return (
                             <tr key={user._id} style={{
@@ -1644,7 +1653,7 @@ function SuperAdminDashboard() {
                                 )}
                               </td>
                               <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                {userReport && !user.retakeAllowed ? (
+                                {!user.retakeAllowed ? (
                                   <button
                                     onClick={() => handleSecondChance(user._id, user.name)}
                                     style={{
@@ -1671,7 +1680,9 @@ function SuperAdminDashboard() {
                                     Give Second Chance
                                   </button>
                                 ) : (
-                                  <span style={{ color: '#475569', fontSize: '0.8rem' }}>No action required</span>
+                                  <span style={{ color: '#c084fc', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <CheckCircle size={13} color="#c084fc" /> Second Chance Active
+                                  </span>
                                 )}
                               </td>
                             </tr>
