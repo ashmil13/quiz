@@ -48,6 +48,9 @@ function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [autoSync, setAutoSync] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(new Date());
   const [violationsFilter, setViolationsFilter] = useState('completed'); // 'completed' | 'terminated' | 'violations'
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -82,9 +85,10 @@ function SuperAdminDashboard() {
     }
   }, [auth, navigate]);
 
-  // Fetch all backend data safely
-  const fetchData = async () => {
-    setLoading(true);
+  // Fetch all backend data safely (supports silent background sync for real-time DB polling)
+  const fetchData = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
+    setIsSyncing(true);
     setError('');
     try {
       const token = localStorage.getItem("accessToken");
@@ -133,17 +137,28 @@ function SuperAdminDashboard() {
       } catch (qErr) {
         console.error("Error loading questions:", qErr.response?.data || qErr.message);
       }
+      setLastSyncTime(new Date());
     } catch (err) {
       console.error("Dashboard fetch error:", err);
-      setError('Failed to fetch dashboard data. Please try again.');
+      if (!isSilent) setError('Failed to fetch dashboard data. Please try again.');
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
+      setIsSyncing(false);
     }
   };
 
   useEffect(() => {
     fetchData();
   }, [refreshKey]);
+
+  // Real-time polling effect to pull newly added database records automatically every 5 seconds
+  useEffect(() => {
+    if (!autoSync) return;
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [autoSync]);
 
   // Open Full Report Detail Modal (fetches video & full report if needed)
   const handleViewReportDetail = async (report) => {
@@ -696,7 +711,7 @@ function SuperAdminDashboard() {
                   outline: 'none'
                 }}
               >
-                <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
                 Sync
               </button>
             </div>
@@ -816,9 +831,42 @@ function SuperAdminDashboard() {
                 Export CSV
               </button>
 
+              {/* Auto Sync Toggle & Live Indicator */}
+              <button
+                onClick={() => setAutoSync(!autoSync)}
+                title={autoSync ? "Click to pause real-time database polling (every 5s)" : "Click to enable auto polling for new database records"}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  padding: '0.6rem 1rem',
+                  borderRadius: '10px',
+                  border: autoSync ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(148, 163, 184, 0.2)',
+                  background: autoSync ? 'rgba(34, 197, 94, 0.1)' : 'rgba(148, 163, 184, 0.05)',
+                  color: autoSync ? '#4ade80' : '#94a3b8',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+              >
+                <span
+                  className={autoSync ? 'animate-pulse' : ''}
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: autoSync ? '#22c55e' : '#64748b'
+                  }}
+                />
+                {autoSync ? 'Live Sync' : 'Sync Paused'}
+              </button>
+
               {/* Sync Button */}
               <button
                 onClick={() => setRefreshKey(prev => prev + 1)}
+                title={`Last synced: ${lastSyncTime ? lastSyncTime.toLocaleTimeString() : 'Just now'}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -836,7 +884,7 @@ function SuperAdminDashboard() {
                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}
               >
-                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
                 Sync Data
               </button>
             </div>

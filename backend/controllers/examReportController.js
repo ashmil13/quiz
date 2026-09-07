@@ -130,7 +130,17 @@ export const getAllReports = async (req, res) => {
     let reports = [];
     try {
       // Exclude large videoBase64 payloads from list view and use lean() for fast & crash-proof retrieval
-      reports = await ExamReport.find().select('-videoBase64').sort({ createdAt: -1 }).lean();
+      reports = await ExamReport.find()
+        .populate('user', 'name email')
+        .select('-videoBase64')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // Ensure studentName is always populated cleanly
+      reports = reports.map(r => ({
+        ...r,
+        studentName: (r.user && r.user.name) ? r.user.name : (r.studentName || 'Student')
+      }));
     } catch (dbErr) {
       console.error('⚠️ DB query error in getAllReports:', dbErr.message);
       reports = [];
