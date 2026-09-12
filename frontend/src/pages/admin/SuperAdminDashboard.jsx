@@ -22,9 +22,10 @@ import {
   Eye,
   CheckCircle,
   Clock,
-  User,
   Sparkles,
-  Database
+  Database,
+  Trophy,
+  Medal
 } from 'lucide-react';
 import axios from '../../axios';
 import { useNavigate } from 'react-router-dom';
@@ -54,6 +55,7 @@ function SuperAdminDashboard() {
   const [lastSyncTime, setLastSyncTime] = useState(new Date());
   const [violationsFilter, setViolationsFilter] = useState('completed'); // 'completed' | 'terminated' | 'violations'
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('marks'); // 'marks' | 'date' | 'suspicion'
 
   // Selected Report Modal (Details + Video Player)
   const [selectedReport, setSelectedReport] = useState(null);
@@ -422,14 +424,53 @@ function SuperAdminDashboard() {
     }
   };
 
+  // Sort reports according to selected sort option (Marks order 1st, 2nd, 3rd)
+  const sortedReports = [...reports].sort((a, b) => {
+    if (sortBy === 'marks') {
+      const scoreA = (a.score || 0) / (a.totalQuestions || 1);
+      const scoreB = (b.score || 0) / (b.totalQuestions || 1);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return (b.score || 0) - (a.score || 0);
+    } else if (sortBy === 'suspicion') {
+      return (b.suspicionScore || 0) - (a.suspicionScore || 0);
+    } else {
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    }
+  });
+
   // Filtered dataset
-  const filteredReports = reports.filter(r => {
+  const filteredReports = sortedReports.filter(r => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     const student = (r.studentName || '').toLowerCase();
     const exam = (r.examName || '').toLowerCase();
     return student.includes(q) || exam.includes(q);
   });
+
+  // Calculate Top 3 Scorers by Marks
+  const topScorers = [...reports]
+    .sort((a, b) => {
+      const scoreA = (a.score || 0) / (a.totalQuestions || 1);
+      const scoreB = (b.score || 0) / (b.totalQuestions || 1);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return (b.score || 0) - (a.score || 0);
+    })
+    .slice(0, 3);
+
+  // Helper to get candidate rank info (1st, 2nd, 3rd...)
+  const getRankInfo = (report) => {
+    const allRanked = [...reports].sort((a, b) => {
+      const scoreA = (a.score || 0) / (a.totalQuestions || 1);
+      const scoreB = (b.score || 0) / (b.totalQuestions || 1);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return (b.score || 0) - (a.score || 0);
+    });
+    const rankIndex = allRanked.findIndex(r => r._id === report._id);
+    if (rankIndex === 0) return { rank: 1, text: '🥇 1st Rank', category: '1st Category (Top Winner)', bg: 'rgba(245, 158, 11, 0.18)', border: 'rgba(245, 158, 11, 0.5)', color: '#fbbf24' };
+    if (rankIndex === 1) return { rank: 2, text: '🥈 2nd Rank', category: '2nd Category (Distinction)', bg: 'rgba(148, 163, 184, 0.18)', border: 'rgba(148, 163, 184, 0.5)', color: '#e2e8f0' };
+    if (rankIndex === 2) return { rank: 3, text: '🥉 3rd Rank', category: '3rd Category (Pass Grade)', bg: 'rgba(180, 83, 9, 0.18)', border: 'rgba(180, 83, 9, 0.5)', color: '#fdba74' };
+    return { rank: rankIndex + 1, text: `🏅 Rank ${rankIndex + 1}`, category: `Rank ${rankIndex + 1}`, bg: 'rgba(30, 41, 59, 0.4)', border: 'rgba(255, 255, 255, 0.08)', color: '#94a3b8' };
+  };
 
   const filteredUsers = users.filter(u => {
     if (u.role !== 'User') return false;
@@ -1120,7 +1161,20 @@ function SuperAdminDashboard() {
                           {filteredReports.slice(0, 5).map((report) => (
                             <tr key={report._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', fontSize: '0.85rem' }}>
                               <td style={{ padding: '0.75rem', fontWeight: 600, color: '#f8fafc' }}>
-                                {report.studentName}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    background: getRankInfo(report).bg,
+                                    border: `1px solid ${getRankInfo(report).border}`,
+                                    color: getRankInfo(report).color,
+                                    padding: '0.15rem 0.45rem',
+                                    borderRadius: '8px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800
+                                  }}>
+                                    {getRankInfo(report).text}
+                                  </span>
+                                  {report.studentName}
+                                </div>
                               </td>
                               <td style={{ padding: '0.75rem' }}>
                                 {report.status === 'Terminated' ? (
@@ -1173,6 +1227,218 @@ function SuperAdminDashboard() {
             {/* EXAM REPORTS TAB */}
             {activeTab === 'reports' && (
               <div>
+                {/* TOP 1ST, 2ND, 3RD MARK CATEGORIES LEADERBOARD PODIUM */}
+                {reports.length > 0 && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.5) 100%)',
+                    border: '1px solid rgba(168, 85, 247, 0.25)',
+                    borderRadius: '24px',
+                    padding: '1.75rem',
+                    marginBottom: '2rem',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justify: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '1.5rem',
+                      flexWrap: 'wrap',
+                      gap: '1rem'
+                    }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <Trophy size={24} color="#f59e0b" />
+                          Candidate Mark Ranks & Categories (1st, 2nd, 3rd Place)
+                        </h3>
+                        <p style={{ margin: '0.25rem 0 0 0', color: '#94a3b8', fontSize: '0.85rem' }}>
+                          Top performing candidates ordered by marks (🥇 1st Place, 🥈 2nd Place, 🥉 3rd Place Categories)
+                        </p>
+                      </div>
+
+                      {/* Sort Order Selector */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(15, 23, 42, 0.6)', padding: '0.35rem 0.5rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                        <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', paddingLeft: '0.3rem' }}>Sort Order:</span>
+                        <button
+                          onClick={() => setSortBy('marks')}
+                          style={{
+                            padding: '0.4rem 0.85rem',
+                            borderRadius: '8px',
+                            border: sortBy === 'marks' ? '1px solid #f59e0b' : '1px solid transparent',
+                            background: sortBy === 'marks' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                            color: sortBy === 'marks' ? '#fbbf24' : '#94a3b8',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            outline: 'none'
+                          }}
+                        >
+                          🥇 Marks Order (1st, 2nd, 3rd)
+                        </button>
+                        <button
+                          onClick={() => setSortBy('date')}
+                          style={{
+                            padding: '0.4rem 0.85rem',
+                            borderRadius: '8px',
+                            border: sortBy === 'date' ? '1px solid #c084fc' : '1px solid transparent',
+                            background: sortBy === 'date' ? 'rgba(168, 85, 247, 0.2)' : 'transparent',
+                            color: sortBy === 'date' ? '#c084fc' : '#94a3b8',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            outline: 'none'
+                          }}
+                        >
+                          📅 Latest Attempt
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Podium Grid for 1st, 2nd, 3rd Place */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                      gap: '1.25rem'
+                    }}>
+                      {/* 🥇 1ST PLACE CATEGORY */}
+                      {topScorers[0] && (
+                        <div style={{
+                          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(180, 83, 9, 0.05) 100%)',
+                          border: '2px solid rgba(245, 158, 11, 0.5)',
+                          borderRadius: '20px',
+                          padding: '1.4rem',
+                          boxShadow: '0 8px 25px rgba(245, 158, 11, 0.2)',
+                          position: 'relative'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                            <span style={{
+                              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                              color: '#ffffff',
+                              padding: '0.35rem 0.85rem',
+                              borderRadius: '20px',
+                              fontSize: '0.8rem',
+                              fontWeight: 800,
+                              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)'
+                            }}>
+                              🥇 1ST PLACE CATEGORY
+                            </span>
+                            <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fbbf24' }}>
+                              {Math.round(((topScorers[0].score || 0) / (topScorers[0].totalQuestions || 1)) * 100)}%
+                            </span>
+                          </div>
+
+                          <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.3rem', fontWeight: 800, color: '#fef3c7' }}>
+                            {topScorers[0].studentName}
+                          </h4>
+                          <p style={{ margin: '0 0 0.85rem 0', color: '#fde68a', fontSize: '0.9rem', fontWeight: 600 }}>
+                            Score: <strong>{topScorers[0].score} / {topScorers[0].totalQuestions} Points</strong>
+                          </p>
+
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <span style={{ background: 'rgba(245, 158, 11, 0.25)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                              Rank #1 Top Winner
+                            </span>
+                            <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                              {topScorers[0].status}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 🥈 2ND PLACE CATEGORY */}
+                      {topScorers[1] && (
+                        <div style={{
+                          background: 'linear-gradient(135deg, rgba(148, 163, 184, 0.16) 0%, rgba(71, 85, 105, 0.05) 100%)',
+                          border: '2px solid rgba(148, 163, 184, 0.4)',
+                          borderRadius: '20px',
+                          padding: '1.4rem',
+                          boxShadow: '0 8px 25px rgba(148, 163, 184, 0.15)',
+                          position: 'relative'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                            <span style={{
+                              background: 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
+                              color: '#ffffff',
+                              padding: '0.35rem 0.85rem',
+                              borderRadius: '20px',
+                              fontSize: '0.8rem',
+                              fontWeight: 800,
+                              boxShadow: '0 4px 12px rgba(148, 163, 184, 0.3)'
+                            }}>
+                              🥈 2ND PLACE CATEGORY
+                            </span>
+                            <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#e2e8f0' }}>
+                              {Math.round(((topScorers[1].score || 0) / (topScorers[1].totalQuestions || 1)) * 100)}%
+                            </span>
+                          </div>
+
+                          <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>
+                            {topScorers[1].studentName}
+                          </h4>
+                          <p style={{ margin: '0 0 0.85rem 0', color: '#cbd5e1', fontSize: '0.9rem', fontWeight: 600 }}>
+                            Score: <strong>{topScorers[1].score} / {topScorers[1].totalQuestions} Points</strong>
+                          </p>
+
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <span style={{ background: 'rgba(148, 163, 184, 0.25)', border: '1px solid rgba(148, 163, 184, 0.4)', color: '#e2e8f0', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                              Rank #2 Distinction
+                            </span>
+                            <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                              {topScorers[1].status}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 🥉 3RD PLACE CATEGORY */}
+                      {topScorers[2] && (
+                        <div style={{
+                          background: 'linear-gradient(135deg, rgba(180, 83, 9, 0.16) 0%, rgba(120, 53, 15, 0.05) 100%)',
+                          border: '2px solid rgba(180, 83, 9, 0.4)',
+                          borderRadius: '20px',
+                          padding: '1.4rem',
+                          boxShadow: '0 8px 25px rgba(180, 83, 9, 0.15)',
+                          position: 'relative'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                            <span style={{
+                              background: 'linear-gradient(135deg, #b45309 0%, #78350f 100%)',
+                              color: '#ffffff',
+                              padding: '0.35rem 0.85rem',
+                              borderRadius: '20px',
+                              fontSize: '0.8rem',
+                              fontWeight: 800,
+                              boxShadow: '0 4px 12px rgba(180, 83, 9, 0.3)'
+                            }}>
+                              🥉 3RD PLACE CATEGORY
+                            </span>
+                            <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fdba74' }}>
+                              {Math.round(((topScorers[2].score || 0) / (topScorers[2].totalQuestions || 1)) * 100)}%
+                            </span>
+                          </div>
+
+                          <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.3rem', fontWeight: 800, color: '#ffedd5' }}>
+                            {topScorers[2].studentName}
+                          </h4>
+                          <p style={{ margin: '0 0 0.85rem 0', color: '#fed7aa', fontSize: '0.9rem', fontWeight: 600 }}>
+                            Score: <strong>{topScorers[2].score} / {topScorers[2].totalQuestions} Points</strong>
+                          </p>
+
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <span style={{ background: 'rgba(180, 83, 9, 0.25)', border: '1px solid rgba(180, 83, 9, 0.4)', color: '#fdba74', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                              Rank #3 Good Pass
+                            </span>
+                            <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                              {topScorers[2].status}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {filteredReports.length === 0 ? (
                   <div style={{
                     background: 'rgba(30, 41, 59, 0.15)',
@@ -1216,6 +1482,7 @@ function SuperAdminDashboard() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                          <th style={{ padding: '1rem' }}>Rank / Category</th>
                           <th style={{ padding: '1rem' }}>Candidate</th>
                           <th style={{ padding: '1rem' }}>Exam Title</th>
                           <th style={{ padding: '1rem' }}>Status</th>
@@ -1231,12 +1498,30 @@ function SuperAdminDashboard() {
                           const effectiveSuspicion = isTerminated ? 100 : (report.suspicionScore || 0);
                           const isSuspicious = isTerminated || effectiveSuspicion >= 60;
                           const hasVideo = Boolean(report.videoUrl || report.videoBase64);
+                          const rankInfo = getRankInfo(report);
 
                           return (
                             <tr key={report._id} style={{ 
                               borderBottom: '1px solid rgba(255, 255, 255, 0.04)', 
                               fontSize: '0.9rem'
                             }}>
+                              <td style={{ padding: '1rem' }}>
+                                <span style={{
+                                  background: rankInfo.bg,
+                                  border: `1px solid ${rankInfo.border}`,
+                                  color: rankInfo.color,
+                                  padding: '0.3rem 0.7rem',
+                                  borderRadius: '12px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 800,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {rankInfo.text}
+                                </span>
+                              </td>
                               <td style={{ padding: '1rem', fontWeight: 600 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                   {isSuspicious && <span title="Terminated / Suspicious activity flagged" style={{ color: '#ef4444' }}>🚩</span>}
