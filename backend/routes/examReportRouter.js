@@ -5,7 +5,8 @@ import {
   getReportDetail,
   checkUserAttempt,
   deleteReport,
-  seedSampleReportsEndpoint
+  seedSampleReportsEndpoint,
+  restoreDatabaseEndpoint
 } from '../controllers/examReportController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post('/upload', protect, uploadExamReport);
 router.get('/all', protect, getAllReports);
 router.post('/seed', protect, seedSampleReportsEndpoint);
+router.post('/restore', protect, restoreDatabaseEndpoint);
 router.get('/check-attempt', protect, checkUserAttempt);
 router.get('/:id', protect, getReportDetail);
 router.delete('/:id', protect, deleteReport);

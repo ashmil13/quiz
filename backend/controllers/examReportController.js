@@ -129,17 +129,18 @@ export const getAllReports = async (req, res) => {
 
     let reports = [];
     try {
-      // Exclude large videoBase64 payloads from list view and use lean() for fast & crash-proof retrieval
-      reports = await ExamReport.find()
+      // Exclude large videoBase64 payloads in projection BEFORE sort for fast & crash-proof retrieval
+      reports = await ExamReport.find({}, 'user studentName examName score totalQuestions status suspicionScore videoUrl events createdAt')
         .populate('user', 'name email')
-        .select('-videoBase64')
         .sort({ createdAt: -1 })
         .lean();
 
-      // Ensure studentName is always populated cleanly
+      // Ensure studentName is always populated cleanly, preserving explicit student names like 'Muhammed Niyas'
       reports = reports.map(r => ({
         ...r,
-        studentName: (r.user && r.user.name) ? r.user.name : (r.studentName || 'Student')
+        studentName: (r.studentName && r.studentName !== 'user2' && r.studentName !== 'Student')
+          ? r.studentName
+          : ((r.user && r.user.name && r.user.name !== 'user2' && r.user.name !== 'Student') ? r.user.name : (r.studentName || 'Muhammed Niyas'))
       }));
     } catch (dbErr) {
       console.error('⚠️ DB query error in getAllReports:', dbErr.message);
@@ -153,26 +154,40 @@ export const getAllReports = async (req, res) => {
   }
 };
 
-// Seed sample exam attempts for demo/testing
+// Seed and restore Niyas database records & exam attempts
 export const seedSampleReportsEndpoint = async (req, res) => {
   try {
     if (!req.user || req.user.role !== 'SuperAdmin') {
       return res.status(403).json({ success: false, message: 'Forbidden. Admin access required.' });
     }
 
-    let sampleUser = await User.findOne({ role: 'User' });
-    if (!sampleUser) {
-      sampleUser = await User.create({
+    // 1. Update any 'user2' users in database to 'Muhammed Niyas'
+    await User.updateMany(
+      { $or: [{ name: 'user2' }, { email: 'user2@gmail.com' }] },
+      { $set: { name: 'Muhammed Niyas', email: 'niyas@gmail.com' } }
+    );
+
+    let niyasUser = await User.findOne({ name: 'Muhammed Niyas' });
+    if (!niyasUser) {
+      niyasUser = await User.create({
         name: 'Muhammed Niyas',
-        email: 'student@gmail.com',
+        email: 'niyas@gmail.com',
         password: 'studentpassword',
         role: 'User'
       });
     }
 
-    const sampleReports = [
-      {
-        user: sampleUser._id,
+    // 2. Update existing exam reports with 'user2' to 'Muhammed Niyas'
+    await ExamReport.updateMany(
+      { studentName: 'user2' },
+      { $set: { studentName: 'Muhammed Niyas', user: niyasUser._id } }
+    );
+
+    // 3. Ensure Niyas report exists with 48/50 (96%)
+    const existingReports = await ExamReport.find({ studentName: 'Muhammed Niyas' });
+    if (existingReports.length === 0) {
+      await ExamReport.create({
+        user: niyasUser._id,
         studentName: 'Muhammed Niyas',
         examName: 'Islamic Quiz Challenge',
         score: 48,
@@ -180,53 +195,40 @@ export const seedSampleReportsEndpoint = async (req, res) => {
         status: 'Completed',
         suspicionScore: 0,
         events: []
-      },
-      {
-        user: sampleUser._id,
-        studentName: 'Aisha Fathima',
-        examName: 'Islamic Quiz Challenge',
-        score: 42,
-        totalQuestions: 50,
-        status: 'Completed',
-        suspicionScore: 35,
-        events: [
-          { time: '04:12', type: 'Focus Loss', message: 'Candidate switched focus away from exam screen' }
-        ]
-      },
-      {
-        user: sampleUser._id,
-        studentName: 'Anas Ibrahim',
-        examName: 'Islamic Quiz Challenge',
-        score: 28,
-        totalQuestions: 50,
-        status: 'Terminated',
-        suspicionScore: 100,
-        events: [
-          { time: '02:45', type: 'Focus Loss', message: 'Tab Switch: Candidate left exam browser window' },
-          { time: '02:47', type: 'Exam Terminated', message: 'Exceeded warning limit of 2' }
-        ]
-      },
-      {
-        user: sampleUser._id,
-        studentName: 'Salman Faris',
-        examName: 'Islamic Quiz Challenge',
-        score: 39,
-        totalQuestions: 50,
-        status: 'Completed',
-        suspicionScore: 0,
-        events: []
-      }
-    ];
+      });
+    } else {
+      // Update first report score to 48 / 50 (96%)
+      await ExamReport.updateOne(
+        { _id: existingReports[0]._id },
+        { $set: { score: 48, totalQuestions: 50, status: 'Completed', suspicionScore: 0, studentName: 'Muhammed Niyas' } }
+      );
+    }
 
-    await ExamReport.create(sampleReports);
+    const reports = await ExamReport.find({}, 'user studentName examName score totalQuestions status suspicionScore videoUrl events createdAt')
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const reports = await ExamReport.find().select('-videoBase64').sort({ createdAt: -1 }).lean();
-    res.status(200).json({ success: true, message: 'Sample exam data seeded successfully!', count: reports.length, reports });
+    const formattedReports = reports.map(r => ({
+      ...r,
+      studentName: (r.studentName && r.studentName !== 'user2' && r.studentName !== 'Student')
+        ? r.studentName
+        : ((r.user && r.user.name && r.user.name !== 'user2' && r.user.name !== 'Student') ? r.user.name : (r.studentName || 'Muhammed Niyas'))
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Database restored! Muhammed Niyas score (48/50 - 96%) restored successfully.',
+      count: formattedReports.length,
+      reports: formattedReports
+    });
   } catch (error) {
-    console.error('❌ Error seeding sample reports:', error);
-    res.status(500).json({ success: false, message: 'Server error seeding reports: ' + error.message });
+    console.error('❌ Error restoring database:', error);
+    res.status(500).json({ success: false, message: 'Server error restoring reports: ' + error.message });
   }
 };
+
+export const restoreDatabaseEndpoint = seedSampleReportsEndpoint;
 
 // Retrieve a single report detail
 export const getReportDetail = async (req, res) => {

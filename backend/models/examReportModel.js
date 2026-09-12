@@ -60,5 +60,7 @@ const ExamReportSchema = new mongoose.Schema({
   timestamps: true
 });
 
+ExamReportSchema.index({ createdAt: -1 });
+
 export const ExamReport = mongoose.models.ExamReport || mongoose.model('ExamReport', ExamReportSchema);
 export default ExamReport;

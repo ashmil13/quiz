@@ -23,7 +23,8 @@ import {
   CheckCircle,
   Clock,
   User,
-  Sparkles
+  Sparkles,
+  Database
 } from 'lucide-react';
 import axios from '../../axios';
 import { useNavigate } from 'react-router-dom';
@@ -202,11 +203,30 @@ function SuperAdminDashboard() {
       if (res.data && res.data.reports) {
         setReports(res.data.reports);
         setRefreshKey(prev => prev + 1);
-        alert("Successfully loaded sample candidate exam attempt records!");
+        alert("Successfully restored Muhammed Niyas data and sample candidate records!");
       }
     } catch (err) {
       console.error("Failed to seed sample reports:", err);
       alert("Failed to load sample exam data.");
+    }
+  };
+
+  // Restore DB & Niyas Data Handler
+  const handleRestoreDatabase = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await axios.post('/api/exam-report/restore', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data && res.data.reports) {
+        setReports(res.data.reports);
+        setRefreshKey(prev => prev + 1);
+        await fetchData(true);
+        alert(res.data.message || "Database restored successfully! Muhammed Niyas data and scores are active.");
+      }
+    } catch (err) {
+      console.error("Failed to restore database:", err);
+      alert("Failed to restore database: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -779,6 +799,32 @@ function SuperAdminDashboard() {
                   </button>
                 )}
               </div>
+
+              {/* Restore Niyas Data Button */}
+              <button
+                onClick={handleRestoreDatabase}
+                title="Restore Muhammed Niyas scores & database candidate records"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(59, 130, 246, 0.4)',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  color: '#60a5fa',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'}
+              >
+                <Database size={14} />
+                Restore Niyas Data
+              </button>
 
               {/* Load Demo Data Button */}
               <button
